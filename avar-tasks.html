@@ -663,6 +663,7 @@ function canUpdate(task) {
 // ══════════════════════════════════════════════════════
 function initMSAL() {
   setLoginStatus('Connecting to Microsoft…');
+  clearMSALInteractionState();
   const msalConfig = {
     auth: {
       clientId: CFG.client,
@@ -675,18 +676,27 @@ function initMSAL() {
   try {
     msalInstance = new msal.PublicClientApplication(msalConfig);
     msalInstance.initialize().then(() => {
-      // Clear any stuck interaction state before proceeding
-      clearMSALInteractionState();
-      setLoginStatus('Ready — click Sign in with Microsoft');
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
+      // Handle redirect response (returning from Microsoft login page)
+      msalInstance.handleRedirectPromise().then(resp => {
+        if (resp && resp.account) {
+          msUser = resp.account;
+          acquireToken();
+          return;
+        }
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); return; }
+        setLoginStatus('Ready — click Sign in with Microsoft');
+      }).catch(e => {
+        console.error('Redirect error:', e);
+        clearMSALInteractionState();
+        setLoginStatus('Ready — click Sign in with Microsoft');
+      });
     }).catch(e => { setLoginStatus('Init error: ' + (e.message || e.errorCode), true); });
   } catch(e) { setLoginStatus('Startup error: ' + e.message, true); }
 }
 
 function clearMSALInteractionState() {
   try {
-    // Clear ALL MSAL keys from localStorage
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -695,7 +705,6 @@ function clearMSALInteractionState() {
       }
     }
     keysToRemove.forEach(k => localStorage.removeItem(k));
-    // Clear all sessionStorage
     sessionStorage.clear();
   } catch(e) { console.warn('Could not clear MSAL state', e); }
 }
@@ -708,28 +717,11 @@ function setLoginStatus(msg, isError=false) {
 function signIn() {
   if (!msalInstance) { setLoginStatus('Still initializing — please wait', true); return; }
   clearMSALInteractionState();
-  const scopes = ['User.Read'];
-  setLoginStatus('Opening Microsoft login…');
-  msalInstance.loginPopup({ scopes })
-    .then(resp => {
-      if (resp?.account) { msUser = resp.account; acquireToken(); }
-    })
-    .catch(e => {
-      console.error('Login error:', e);
-      if (e.errorCode === 'interaction_in_progress') {
-        // Fully reinitialise MSAL and retry automatically
-        setLoginStatus('Clearing session — please wait…');
-        clearMSALInteractionState();
-        msalInstance = null;
-        setTimeout(() => { initMSAL(); }, 800);
-      } else if (e.errorCode === 'popup_window_error' || e.errorCode === 'empty_window_error') {
-        setLoginStatus('Popups are blocked — allow popups for this site then try again', true);
-      } else if (e.errorCode === 'user_cancelled') {
-        setLoginStatus('Sign in cancelled — click the button to try again');
-      } else {
-        setLoginStatus('Error: ' + (e.errorMessage || e.message || e.errorCode), true);
-      }
-    });
+  setLoginStatus('Redirecting to Microsoft login…');
+  msalInstance.loginRedirect({ scopes: ['User.Read'] }).catch(e => {
+    console.error('Login error:', e);
+    setLoginStatus('Error: ' + (e.errorMessage || e.message || e.errorCode), true);
+  });
 }
 
 function acquireToken() {
@@ -738,9 +730,7 @@ function acquireToken() {
   msalInstance.acquireTokenSilent({ scopes, account: msUser })
     .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
     .catch(() => {
-      msalInstance.acquireTokenPopup({ scopes, account: msUser })
-        .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
-        .catch(e => { console.error(e); showScreen('login'); setLoginStatus('Session expired — sign in again', true); });
+      msalInstance.acquireTokenRedirect({ scopes, account: msUser });
     });
 }
 
