@@ -27,7 +27,7 @@
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
 
 /* ── CONFIG SCREEN ── */
-#config-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+#config-screen{display:none !important;}
 .config-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:520px;padding:32px;}
 .config-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
 .config-logo-sq{width:32px;height:32px;background:#3a5092;border-radius:8px;display:flex;align-items:center;justify-content:center;}
@@ -323,9 +323,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <svg viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
       Sign in with Microsoft
     </button>
-    <div style="margin-top:16px;">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('config-screen').style.display='flex';document.getElementById('login-screen').style.display='none';" style="width:100%;justify-content:center;">← Change Configuration</button>
-    </div>
+    <div style="margin-top:16px;font-size:11px;color:var(--text3);text-align:center;" id="login-status">Initializing…</div>
   </div>
 </div>
 
@@ -620,25 +618,42 @@ function initMSAL() {
   };
   msalInstance = new msal.PublicClientApplication(msalConfig);
   msalInstance.initialize().then(() => {
+    setLoginStatus('Ready — click Sign in with Microsoft');
     // Check if we already have an account cached
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
-  }).catch(console.error);
+  }).catch(e => {
+    setLoginStatus('MSAL init error: ' + e.message, true);
+    console.error('MSAL init error', e);
+  });
+}
+
+function setLoginStatus(msg, isError=false) {
+  const el = document.getElementById('login-status');
+  if (el) { el.textContent = msg; el.style.color = isError ? 'var(--red)' : 'var(--text3)'; }
 }
 
 function signIn() {
+  if (!msalInstance) {
+    setLoginStatus('Still initializing — please wait a moment and try again', true);
+    return;
+  }
   const scopes = ['User.Read', 'https://graph.microsoft.com/Sites.ReadWrite.All'];
+  setLoginStatus('Opening Microsoft login popup…');
   msalInstance.loginPopup({ scopes })
     .then(resp => {
+      setLoginStatus('Signed in — loading your data…');
       if (resp && resp.accessToken) { accessToken = resp.accessToken; msUser = resp.account; loadUserAndStart(); }
       else if (resp && resp.account) { msUser = resp.account; acquireToken(); }
     })
     .catch(e => {
-      console.error(e);
+      console.error('Login error:', e);
       if (e.errorCode === 'popup_window_error' || e.errorCode === 'empty_window_error') {
-        toast('Popups are blocked — please allow popups for this site and try again', true);
+        setLoginStatus('Popups are blocked — please allow popups for lyric-logic.github.io and try again', true);
+      } else if (e.errorCode === 'user_cancelled') {
+        setLoginStatus('Sign in was cancelled — click the button to try again', true);
       } else {
-        toast('Sign in failed: ' + (e.errorMessage || e.message || e.errorCode), true);
+        setLoginStatus('Error: ' + (e.errorMessage || e.message || e.errorCode || 'unknown error'), true);
       }
     });
 }
@@ -1226,18 +1241,17 @@ function avColor(name){let h=0;for(let i=0;i<(name||'').length;i++)h=(h*31+name.
 function roleBadge(r){const cl={superadmin:'br-sa',manager:'br-manager',member:'br-member'}[r]||'';const lb={superadmin:'Super Admin',manager:'Manager',member:'Member'}[r]||r;return`<span class="badge ${cl}">${lb}</span>`;}
 
 // ══════════════════════════════════════════════════════
-// INIT
+// INIT — credentials hardcoded, config screen skipped
 // ══════════════════════════════════════════════════════
-CFG = loadConfig();
-if (CFG) {
-  // Pre-fill config form
-  document.getElementById('cfg-tenant').value = CFG.tenant;
-  document.getElementById('cfg-client').value = CFG.client;
-  document.getElementById('cfg-site').value = CFG.site;
-  initMSAL();
-} else {
-  showScreen('config');
-}
+CFG = {
+  tenant: 'b3791c90-42f6-4b17-9c18-9300e725ae1f',
+  client: 'f1ce86ef-6125-409c-950d-c90072c459b7',
+  site:   'https://avarglobal.sharepoint.com/sites/DigitalWorkspace',
+  redirectUri: 'https://lyric-logic.github.io/avar-tasks/avar-tasks.html'
+};
+// Save to localStorage so acquireToken picks it up
+localStorage.setItem(CFG_KEY, JSON.stringify(CFG));
+initMSAL();
 </script>
 </body>
 </html>
