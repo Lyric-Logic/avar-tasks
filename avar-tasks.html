@@ -641,7 +641,7 @@ function signIn() {
     setLoginStatus('Still initializing — please wait a moment and try again', true);
     return;
   }
-  const scopes = ['User.Read', 'https://avarglobal.sharepoint.com/AllSites.Write'];
+  const scopes = ['User.Read'];
   setLoginStatus('Opening Microsoft login popup…');
   msalInstance.loginPopup({ scopes })
     .then(resp => {
@@ -663,7 +663,7 @@ function signIn() {
 
 function acquireToken() {
   showScreen('loading'); setLoadingText('acquiring token…');
-  const scopes = ['User.Read', 'https://avarglobal.sharepoint.com/AllSites.Write'];
+  const scopes = ['https://avarglobal.sharepoint.com/AllSites.Write'];
   msalInstance.acquireTokenSilent({ scopes, account: msUser })
     .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
     .catch(() => {
