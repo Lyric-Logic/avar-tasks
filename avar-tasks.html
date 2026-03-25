@@ -281,6 +281,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <svg viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
       Sign in with Microsoft
     </button>
+    <div style="margin-top:10px;">
+      <button onclick="hardReset()" style="width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);font-size:11px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:all .15s;" onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">
+        Having trouble signing in? Reset session
+      </button>
+    </div>
     <div style="margin-top:14px;font-size:11px;color:var(--text3);text-align:center;" id="login-status">Initializing…</div>
   </div>
 </div>
@@ -707,6 +712,20 @@ function clearMSALInteractionState() {
     keysToRemove.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
   } catch(e) { console.warn('Could not clear MSAL state', e); }
+}
+
+function hardReset() {
+  try {
+    // Wipe everything — localStorage, sessionStorage, all cookies for this domain
+    localStorage.clear();
+    sessionStorage.clear();
+    // Delete all cookies
+    document.cookie.split(';').forEach(c => {
+      document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+    });
+  } catch(e) {}
+  // Force a hard reload with cache bypass
+  window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
 }
 
 function setLoginStatus(msg, isError=false) {
