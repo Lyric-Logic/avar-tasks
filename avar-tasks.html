@@ -685,16 +685,17 @@ function initMSAL() {
 }
 
 function clearMSALInteractionState() {
-  // Clear any stuck MSAL interaction keys from localStorage/sessionStorage
   try {
+    // Clear ALL MSAL keys from localStorage
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.includes('msal.interaction.status') || key.includes('msal.request') || key.includes('msal.nonce') || key.includes('msal.state'))) {
+      if (key && (key.includes('msal') || key.includes('login.windows') || key.includes('login.microsoftonline'))) {
         keysToRemove.push(key);
       }
     }
     keysToRemove.forEach(k => localStorage.removeItem(k));
+    // Clear all sessionStorage
     sessionStorage.clear();
   } catch(e) { console.warn('Could not clear MSAL state', e); }
 }
@@ -706,7 +707,6 @@ function setLoginStatus(msg, isError=false) {
 
 function signIn() {
   if (!msalInstance) { setLoginStatus('Still initializing — please wait', true); return; }
-  // Clear any stuck state before attempting login
   clearMSALInteractionState();
   const scopes = ['User.Read'];
   setLoginStatus('Opening Microsoft login…');
@@ -717,13 +717,15 @@ function signIn() {
     .catch(e => {
       console.error('Login error:', e);
       if (e.errorCode === 'interaction_in_progress') {
-        // Clear stuck state and retry once automatically
+        // Fully reinitialise MSAL and retry automatically
+        setLoginStatus('Clearing session — please wait…');
         clearMSALInteractionState();
-        setLoginStatus('Retrying — click Sign in again', true);
+        msalInstance = null;
+        setTimeout(() => { initMSAL(); }, 800);
       } else if (e.errorCode === 'popup_window_error' || e.errorCode === 'empty_window_error') {
         setLoginStatus('Popups are blocked — allow popups for this site then try again', true);
       } else if (e.errorCode === 'user_cancelled') {
-        setLoginStatus('Sign in cancelled — click the button to try again', true);
+        setLoginStatus('Sign in cancelled — click the button to try again');
       } else {
         setLoginStatus('Error: ' + (e.errorMessage || e.message || e.errorCode), true);
       }
