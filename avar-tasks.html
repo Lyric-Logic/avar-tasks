@@ -675,11 +675,28 @@ function initMSAL() {
   try {
     msalInstance = new msal.PublicClientApplication(msalConfig);
     msalInstance.initialize().then(() => {
+      // Clear any stuck interaction state before proceeding
+      clearMSALInteractionState();
       setLoginStatus('Ready — click Sign in with Microsoft');
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
     }).catch(e => { setLoginStatus('Init error: ' + (e.message || e.errorCode), true); });
   } catch(e) { setLoginStatus('Startup error: ' + e.message, true); }
+}
+
+function clearMSALInteractionState() {
+  // Clear any stuck MSAL interaction keys from localStorage/sessionStorage
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('msal.interaction.status') || key.includes('msal.request') || key.includes('msal.nonce') || key.includes('msal.state'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch(e) { console.warn('Could not clear MSAL state', e); }
 }
 
 function setLoginStatus(msg, isError=false) {
@@ -689,6 +706,8 @@ function setLoginStatus(msg, isError=false) {
 
 function signIn() {
   if (!msalInstance) { setLoginStatus('Still initializing — please wait', true); return; }
+  // Clear any stuck state before attempting login
+  clearMSALInteractionState();
   const scopes = ['User.Read'];
   setLoginStatus('Opening Microsoft login…');
   msalInstance.loginPopup({ scopes })
@@ -696,9 +715,18 @@ function signIn() {
       if (resp?.account) { msUser = resp.account; acquireToken(); }
     })
     .catch(e => {
-      if (e.errorCode === 'popup_window_error' || e.errorCode === 'empty_window_error') setLoginStatus('Popups are blocked — allow popups for this site', true);
-      else if (e.errorCode === 'user_cancelled') setLoginStatus('Sign in cancelled', true);
-      else setLoginStatus('Error: ' + (e.errorMessage || e.message || e.errorCode), true);
+      console.error('Login error:', e);
+      if (e.errorCode === 'interaction_in_progress') {
+        // Clear stuck state and retry once automatically
+        clearMSALInteractionState();
+        setLoginStatus('Retrying — click Sign in again', true);
+      } else if (e.errorCode === 'popup_window_error' || e.errorCode === 'empty_window_error') {
+        setLoginStatus('Popups are blocked — allow popups for this site then try again', true);
+      } else if (e.errorCode === 'user_cancelled') {
+        setLoginStatus('Sign in cancelled — click the button to try again', true);
+      } else {
+        setLoginStatus('Error: ' + (e.errorMessage || e.message || e.errorCode), true);
+      }
     });
 }
 
