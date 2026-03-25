@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVAR — Task Management</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library-browser/3.27.0/msal-browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--bg2:#131720;--bg3:#1a1f2e;--bg4:#21273a;--bg5:#2a3148;
+  --border:rgba(90,109,164,0.15);--border2:rgba(90,109,164,0.28);--border3:rgba(58,80,146,0.6);
+  --text:#e8eaf2;--text2:#8e96b8;--text3:#545d80;
+  --sa:#7b89b5;--sa-bg:rgba(123,137,181,0.12);--sa-border:rgba(123,137,181,0.25);
+  --mg:#5a6da4;--mg-bg:rgba(90,109,164,0.12);--mg-border:rgba(90,109,164,0.25);
+  --tm:#3a5092;--tm-bg:rgba(58,80,146,0.12);--tm-border:rgba(58,80,146,0.25);
+  --accent:#3a5092;--accent2:#5a6da4;--accent3:#7b89b5;
+  --red:#f47c7c;--red-bg:rgba(244,124,124,0.1);--red-border:rgba(244,124,124,0.2);
+  --amber:#f0c060;--amber-bg:rgba(240,192,96,0.1);
+  --green:#6dd49a;--green-bg:rgba(109,212,154,0.1);
+  --blue:#7b89b5;--blue-bg:rgba(123,137,181,0.12);
+  --purple:#8f9fd4;--purple-bg:rgba(143,159,212,0.12);
+  --r:8px;--rl:14px;
+  --mono:'IBM Plex Mono',monospace;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+
+/* ── CONFIG SCREEN ── */
+#config-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.config-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:520px;padding:32px;}
+.config-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.config-logo-sq{width:32px;height:32px;background:#3a5092;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.config-logo-sq svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;}
+.config-title{font-size:18px;font-weight:600;}
+.config-sub{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+.config-section{margin-bottom:22px;}
+.config-section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;}
+.cf-row{margin-bottom:12px;}
+.cf-label{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.5px;}
+.cf-input{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none;transition:border .15s;}
+.cf-input:focus{border-color:var(--border3);}
+.cf-hint{font-size:10px;color:var(--text3);margin-top:4px;line-height:1.5;}
+.cf-hint a{color:var(--blue);text-decoration:none;}
+.cf-hint a:hover{text-decoration:underline;}
+.config-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:20px;}
+.config-info strong{color:var(--text2);}
+.config-info code{font-family:var(--mono);background:var(--bg4);padding:1px 5px;border-radius:3px;font-size:10px;color:var(--amber);}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.login-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:400px;padding:40px;text-align:center;}
+.login-logo{width:48px;height:48px;background:#3a5092;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+.login-logo svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2;}
+.login-title{font-size:20px;font-weight:600;margin-bottom:8px;}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:28px;line-height:1.6;}
+.ms-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s;font-family:'IBM Plex Sans',sans-serif;}
+.ms-btn:hover{background:var(--bg4);border-color:rgba(58,80,146,0.4);}
+.ms-btn svg{width:18px;height:18px;flex-shrink:0;}
+
+/* ── LOADING ── */
+#loading-screen{display:none;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;}
+.spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:#3a5092;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--text3);font-family:var(--mono);}
+
+/* ── APP ── */
+#app-screen{display:none;}
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:232px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sb-top{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:9px;margin-bottom:16px;}
+.logo-sq{width:26px;height:26px;background:#3a5092;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-sq svg{width:14px;height:14px;stroke:var(--bg);fill:none;stroke-width:2;}
+.logo-text{font-size:14px;font-weight:600;letter-spacing:-0.2px;}
+.logo-sub{font-size:10px;color:var(--text3);font-family:var(--mono);}
+.me-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;}
+.me-row{display:flex;align-items:center;gap:8px;}
+.me-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:var(--bg);}
+.me-info{flex:1;min-width:0;}
+.me-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.me-role-tag{font-size:10px;font-family:var(--mono);margin-top:1px;}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 8px;}
+.nav-sect{margin-bottom:16px;}
+.nav-sect-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:0 8px;margin-bottom:4px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .12s;margin-bottom:1px;user-select:none;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:rgba(58,80,146,0.18);color:#7b89b5;}
+.nav-item svg{width:13px;height:13px;flex-shrink:0;}
+.nav-badge{margin-left:auto;font-size:10px;font-family:var(--mono);background:var(--bg5);color:var(--text3);padding:1px 6px;border-radius:10px;}
+.nav-item.active .nav-badge{background:var(--border2);color:var(--text2);}
+.sync-indicator{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:10px;color:var(--text3);font-family:var(--mono);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#6dd49a;flex-shrink:0;}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s ease-in-out infinite;}
+.sync-dot.error{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg2);flex-shrink:0;}
+.topbar-title{font-size:16px;font-weight:600;flex:1;letter-spacing:-0.2px;}
+.filterbar{padding:10px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.search-wrap{position:relative;flex:1;max-width:280px;}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text3);}
+.search-inp{width:100%;padding:6px 10px 6px 28px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none;transition:border .15s;}
+.search-inp:focus{border-color:var(--border3);}
+.search-inp::placeholder{color:var(--text3);}
+.fpill{padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all .12s;font-family:'IBM Plex Sans',sans-serif;}
+.fpill:hover{border-color:var(--border2);color:var(--text2);}
+.fpill.on{background:rgba(58,80,146,0.15);border-color:rgba(58,80,146,0.35);color:#7b89b5;}
+.fsel{padding:4px 8px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:11px;cursor:pointer;outline:none;font-family:'IBM Plex Sans',sans-serif;}
+.content{flex:1;overflow-y:auto;padding:18px 24px;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:5px;font-weight:500;}
+.stat-val{font-size:22px;font-weight:600;font-family:var(--mono);}
+.stat-val.vc{color:#7b89b5;}
+.stat-val.va{color:var(--amber);}
+.stat-val.vr{color:var(--red);}
+.stat-val.vg{color:var(--green);}
+.stat-hint{font-size:10px;color:var(--text3);margin-top:3px;}
+.task-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:6px;cursor:pointer;transition:border-color .15s,background .15s;}
+.task-card:hover{border-color:var(--border2);background:var(--bg3);}
+.task-card.tc-overdue{border-left:2.5px solid var(--red);}
+.task-card.tc-risk{border-left:2.5px solid var(--amber);}
+.task-card.tc-ok{border-left:2.5px solid var(--green);}
+.task-card.tc-done{opacity:.55;}
+.tc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.tc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.dp-high{background:var(--red);}
+.dp-medium{background:var(--amber);}
+.dp-low{background:var(--green);}
+.tc-body{flex:1;min-width:0;}
+.tc-title{font-size:13px;font-weight:500;line-height:1.4;margin-bottom:3px;}
+.tc-desc{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tc-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+.badge{display:inline-flex;align-items:center;font-size:10px;padding:2px 7px;border-radius:10px;font-family:var(--mono);font-weight:500;white-space:nowrap;border:1px solid transparent;}
+.bs-open{background:var(--blue-bg);color:var(--blue);border-color:rgba(126,184,247,.15);}
+.bs-in-progress{background:var(--amber-bg);color:var(--amber);border-color:rgba(240,192,96,.15);}
+.bs-done{background:var(--green-bg);color:var(--green);border-color:rgba(109,212,154,.15);}
+.bs-blocked{background:var(--red-bg);color:var(--red);border-color:rgba(244,124,124,.15);}
+.bp-high{background:var(--red-bg);color:var(--red);}
+.bp-medium{background:var(--amber-bg);color:var(--amber);}
+.bp-low{background:var(--green-bg);color:var(--green);}
+.br-sa{background:rgba(123,137,181,0.15);color:#7b89b5;border-color:rgba(123,137,181,0.3);}
+.br-manager{background:rgba(90,109,164,0.15);color:#5a6da4;border-color:rgba(90,109,164,0.3);}
+.br-member{background:rgba(58,80,146,0.15);color:#8fa0cc;border-color:rgba(58,80,146,0.3);}
+.tc-foot{display:flex;align-items:center;gap:10px;padding-top:9px;border-top:1px solid var(--border);}
+.tc-meta{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);}
+.tc-meta svg{width:11px;height:11px;}
+.chip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.mini-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--bg);flex-shrink:0;}
+.upd-ct{margin-left:auto;display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text3);font-family:var(--mono);}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .13s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;}
+.btn svg{width:13px;height:13px;}
+.btn-primary{background:#3a5092;color:#fff;}
+.btn-primary:hover{background:#2e3f75;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);}
+.btn-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
+.btn-red:hover{background:rgba(244,124,124,.18);}
+.btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(109,212,154,.2);}
+.btn-green:hover{background:rgba(109,212,154,.18);}
+.btn-blue{background:rgba(58,80,146,0.15);color:#7b89b5;border:1px solid rgba(58,80,146,0.3);}
+.btn-blue:hover{background:rgba(58,80,146,0.25);}
+.btn-sm{padding:5px 9px;font-size:11px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 32px 96px rgba(0,0,0,.6);}
+.mh{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg2);z-index:1;}
+.mh-title{font-size:15px;font-weight:600;}
+.mh-sub{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+.close-x{width:26px;height:26px;border-radius:5px;background:var(--bg3);border:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.close-x:hover{background:var(--bg4);}
+.close-x svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none;}
+.mb{padding:18px 22px;}
+.mf{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg2);}
+.fr{margin-bottom:14px;}
+.fr:last-child{margin-bottom:0;}
+.fl{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.5px;}
+.fi,.fs,.fta{width:100%;padding:8px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none;transition:border .15s;}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--border3);}
+.fta{resize:vertical;min-height:70px;}
+.fs option{background:var(--bg3);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dm{max-width:700px;}
+.dm-body{padding:18px 22px;display:grid;grid-template-columns:1fr 190px;gap:24px;}
+.dm-desc{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:18px;}
+.upd-sect-hd{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.upd-item{padding:9px 11px;background:var(--bg3);border-radius:var(--r);margin-bottom:6px;border-left:2px solid var(--border2);}
+.upd-item.ut-progress{border-left-color:var(--blue);}
+.upd-item.ut-blocker{border-left-color:var(--red);}
+.upd-item.ut-done{border-left-color:var(--green);}
+.upd-item.ut-note{border-left-color:var(--purple);}
+.upd-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.upd-author{font-size:11px;font-weight:500;}
+.upd-time{font-size:10px;color:var(--text3);font-family:var(--mono);}
+.upd-tag{font-size:9px;padding:1px 5px;border-radius:3px;font-family:var(--mono);margin-left:auto;}
+.upd-text{font-size:11px;color:var(--text2);line-height:1.5;}
+.add-upd{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.add-upd-hd{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px;}
+.add-upd-row{display:flex;gap:7px;margin-bottom:7px;}
+.utype-sel{padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:11px;font-family:var(--mono);outline:none;width:110px;flex-shrink:0;}
+.dp-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px;}
+.dp-val{font-size:12px;color:var(--text);margin-bottom:12px;}
+.tl-bar-bg{background:var(--bg4);border-radius:3px;height:4px;width:100%;margin-top:5px;}
+.tl-bar-fill{height:4px;border-radius:3px;background:#3a5092;}
+.act-col{display:flex;flex-direction:column;gap:5px;margin-top:6px;}
+.org-node{margin-bottom:4px;}
+.org-node-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);}
+.org-node-row:hover{border-color:var(--border2);}
+.org-children{margin-left:24px;padding-left:12px;border-left:1px solid var(--border);margin-top:4px;}
+.org-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--bg);flex-shrink:0;}
+.user-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);margin-bottom:6px;}
+.user-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--bg);flex-shrink:0;}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:9px;font-size:12px;z-index:999;transform:translateY(90px);opacity:0;transition:all .22s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast-ico{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.toast-ico.ok{background:var(--green-bg);color:var(--green);}
+.toast-ico.err{background:var(--red-bg);color:var(--red);}
+.toast-ico svg{width:10px;height:10px;stroke:currentColor;stroke-width:2.5;fill:none;}
+.empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.perm-note{background:var(--amber-bg);border:1px solid rgba(240,192,96,.2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--amber);margin-bottom:16px;display:none;}
+.perm-note.show{display:block;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     STEP 1: CONFIG SCREEN
+     ══════════════════════════════════════ -->
+<div id="config-screen">
+  <div class="config-card">
+    <div class="config-logo">
+      <svg viewBox="0 0 1024 768" style="width:120px;height:auto;" xmlns="http://www.w3.org/2000/svg"><path d="m 325.51,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" style="fill:#3a5092"/><path d="m 481.86,308.4 h 45.3 l -59.4,151.2 h -59.4 l -33,-151.2 h 45 l 21,111 z" style="fill:#3a5092"/><path d="m 598.05,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" style="fill:#3a5092"/><path d="m 798.01,352.8 c 0,-21.9 -17.7,-44.4 -42.6,-44.4 h -82.5 l -13.5,151.2 h 43.2 l 4.8,-54.3 h 5.7 l 25.8,54.3 h 50.1 l -27.6,-57.9 c 24,-7.2 36.6,-25.8 36.6,-48.9 z m -57,-11.7 c 7.5,0 13.8,7.8 13.8,14.4 0,6.6 -5.4,18 -17.4,18 h -27 l 3,-32.1 h 27.6 z" style="fill:#3a5092"/></svg>
+      <div style="margin-left:8px;"><div class="config-sub" style="font-size:11px;margin-top:2px;">sharepoint setup</div></div>
+    </div>
+
+    <div class="config-info">
+      This is a <strong>one-time setup</strong>. Once saved, this config is stored in the browser and all team members on the same hosted page will share it automatically.<br><br>
+      You will need: your <strong>SharePoint site URL</strong>, your <strong>Azure App (Client) ID</strong>, and your <strong>Tenant ID</strong>. See the setup guide below.
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-title">Azure App Registration</div>
+      <div class="cf-row">
+        <label class="cf-label">Azure Tenant ID</label>
+        <input class="cf-input" id="cfg-tenant" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <div class="cf-hint">Found in Azure Portal → Azure Active Directory → Overview</div>
+      </div>
+      <div class="cf-row">
+        <label class="cf-label">Azure App (Client) ID</label>
+        <input class="cf-input" id="cfg-client" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <div class="cf-hint">Found in Azure Portal → App registrations → your app → Overview</div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-section-title">SharePoint Site</div>
+      <div class="cf-row">
+        <label class="cf-label">SharePoint Site URL</label>
+        <input class="cf-input" id="cfg-site" placeholder="https://yourcompany.sharepoint.com/sites/yoursite">
+        <div class="cf-hint">The full URL of your SharePoint site (no trailing slash)</div>
+      </div>
+    </div>
+
+    <div class="config-section" style="margin-bottom:0;">
+      <div class="config-section-title">Setup Guide</div>
+      <div class="config-info" style="margin-bottom:0;">
+        <strong>Step 1 — Register an Azure App</strong><br>
+        Go to <a href="https://portal.azure.com" target="_blank">portal.azure.com</a> → Azure Active Directory → App registrations → New registration.<br>
+        Name: <code>AVAR Tasks</code> · Supported account types: <em>Accounts in this org only</em><br>
+        Redirect URI: <em>Single-page application (SPA)</em> → paste the URL where you will host this file<br><br>
+        <strong>Step 2 — Add API permissions</strong><br>
+        In your app → API permissions → Add → Microsoft Graph:<br>
+        &nbsp;· <code>User.Read</code> (delegated)<br>
+        &nbsp;· <code>Sites.ReadWrite.All</code> (delegated)<br>
+        Click <em>Grant admin consent</em><br><br>
+        <strong>Step 3 — Create SharePoint Lists</strong><br>
+        On your SharePoint site, create these 3 lists exactly:<br><br>
+        <strong>List 1: TF_Users</strong><br>
+        &nbsp;· <code>Title</code> (single line — built in, use for Name)<br>
+        &nbsp;· <code>Email</code> (single line)<br>
+        &nbsp;· <code>Role</code> (choice: superadmin, manager, member)<br>
+        &nbsp;· <code>ManagerEmail</code> (single line)<br>
+        &nbsp;· <code>AzureId</code> (single line)<br><br>
+        <strong>List 2: TF_Tasks</strong><br>
+        &nbsp;· <code>Title</code> (single line — built in, use for task title)<br>
+        &nbsp;· <code>Description</code> (multiple lines)<br>
+        &nbsp;· <code>AssigneeEmail</code> (single line)<br>
+        &nbsp;· <code>CreatedByEmail</code> (single line)<br>
+        &nbsp;· <code>Priority</code> (choice: high, medium, low)<br>
+        &nbsp;· <code>Status</code> (choice: open, in-progress, blocked, done)<br>
+        &nbsp;· <code>DueDate</code> (date)<br>
+        &nbsp;· <code>Category</code> (single line)<br><br>
+        <strong>List 3: TF_Updates</strong><br>
+        &nbsp;· <code>Title</code> (single line — built in, use for update text)<br>
+        &nbsp;· <code>TaskId</code> (single line)<br>
+        &nbsp;· <code>AuthorEmail</code> (single line)<br>
+        &nbsp;· <code>UpdateType</code> (choice: progress, blocker, note, done)<br><br>
+        <strong>Step 4 — Host this file</strong><br>
+        Upload this HTML file to SharePoint (Site Pages or a document library) and share the link with your team. Or embed it as a Teams tab.
+      </div>
+    </div>
+
+    <div style="margin-top:20px;display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="saveConfig()" style="flex:1;justify-content:center;">Save & Connect</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadDemoMode()">Try Demo Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     STEP 2: LOGIN SCREEN
+     ══════════════════════════════════════ -->
+<div id="login-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;">
+  <div class="login-card">
+    <div style="margin:0 auto 24px;width:160px;">
+      <svg viewBox="0 0 1024 768" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg"><path d="m 325.51,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" style="fill:#3a5092"/><path d="m 481.86,308.4 h 45.3 l -59.4,151.2 h -59.4 l -33,-151.2 h 45 l 21,111 z" style="fill:#3a5092"/><path d="m 598.05,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" style="fill:#3a5092"/><path d="m 798.01,352.8 c 0,-21.9 -17.7,-44.4 -42.6,-44.4 h -82.5 l -13.5,151.2 h 43.2 l 4.8,-54.3 h 5.7 l 25.8,54.3 h 50.1 l -27.6,-57.9 c 24,-7.2 36.6,-25.8 36.6,-48.9 z m -57,-11.7 c 7.5,0 13.8,7.8 13.8,14.4 0,6.6 -5.4,18 -17.4,18 h -27 l 3,-32.1 h 27.6 z" style="fill:#3a5092"/></svg>
+    </div>
+    <div class="login-sub">Sign in with your Microsoft account to access the AVAR task management portal.</div>
+    <button class="ms-btn" onclick="signIn()">
+      <svg viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+      Sign in with Microsoft
+    </button>
+    <div style="margin-top:16px;">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('config-screen').style.display='flex';document.getElementById('login-screen').style.display='none';" style="width:100%;justify-content:center;">← Change Configuration</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">connecting to sharepoint…</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+     ══════════════════════════════════════ -->
+<div id="app-screen">
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="logo">
+        <svg viewBox="220 295 600 180" style="width:88px;height:auto;" xmlns="http://www.w3.org/2000/svg"><path d="m 325.51,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" style="fill:#3a5092"/><path d="m 481.86,308.4 h 45.3 l -59.4,151.2 h -59.4 l -33,-151.2 h 45 l 21,111 z" style="fill:#3a5092"/><path d="m 598.05,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" style="fill:#3a5092"/><path d="m 798.01,352.8 c 0,-21.9 -17.7,-44.4 -42.6,-44.4 h -82.5 l -13.5,151.2 h 43.2 l 4.8,-54.3 h 5.7 l 25.8,54.3 h 50.1 l -27.6,-57.9 c 24,-7.2 36.6,-25.8 36.6,-48.9 z m -57,-11.7 c 7.5,0 13.8,7.8 13.8,14.4 0,6.6 -5.4,18 -17.4,18 h -27 l 3,-32.1 h 27.6 z" style="fill:#3a5092"/></svg>
+        <div><div class="logo-sub" id="sb-site-label" style="font-size:10px;">task management</div></div>
+      </div>
+      <div class="me-card">
+        <div class="me-row">
+          <div class="me-avatar" id="sb-av" style="background:var(--bg5);">?</div>
+          <div class="me-info">
+            <div class="me-name" id="sb-name">Loading…</div>
+            <div class="me-role-tag" id="sb-role-tag" style="color:var(--text3);">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sb-nav">
+      <div class="nav-sect">
+        <div class="nav-sect-label">Views</div>
+        <div class="nav-item active" data-view="all" onclick="setView(this)">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="12" height="12" rx="2"/><path d="M4 7h6M4 4.5h6M4 9.5h4"/></svg>
+          All Tasks<span class="nav-badge" id="nc-all">0</span>
+        </div>
+        <div class="nav-item" data-view="mine" onclick="setView(this)">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="4.5" r="2.5"/><path d="M1 12c0-2.5 2.7-4 6-4s6 1.5 6 4"/></svg>
+          My Tasks<span class="nav-badge" id="nc-mine">0</span>
+        </div>
+        <div class="nav-item" data-view="delegated" onclick="setView(this)">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 4h10M2 7h7M2 10h5"/><path d="M11 9l2 2-2 2"/></svg>
+          Delegated<span class="nav-badge" id="nc-delegated">0</span>
+        </div>
+        <div class="nav-item" data-view="overdue" onclick="setView(this)">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3l2 1.5"/></svg>
+          Overdue<span class="nav-badge" id="nc-overdue">0</span>
+        </div>
+        <div class="nav-item" data-view="done" onclick="setView(this)">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.5"/><path d="M4.5 7l2 2 3-3"/></svg>
+          Completed<span class="nav-badge" id="nc-done">0</span>
+        </div>
+      </div>
+      <div class="nav-sect" id="team-nav-sect" style="display:none;">
+        <div class="nav-sect-label">My Team</div>
+        <div id="team-nav-items"></div>
+      </div>
+      <div class="nav-sect" id="admin-nav-sect" style="display:none;">
+        <div class="nav-sect-label">Admin</div>
+        <div class="nav-item" onclick="openOrgModal()">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="1" width="4" height="3" rx="1"/><rect x="1" y="10" width="4" height="3" rx="1"/><rect x="9" y="10" width="4" height="3" rx="1"/><path d="M7 4v2M3 10V9a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/></svg>
+          Org Chart
+        </div>
+        <div class="nav-item" onclick="openUsersModal()">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="5" cy="4.5" r="2"/><circle cx="9.5" cy="4.5" r="2"/><path d="M1 12c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/><path d="M10 8.5c1.5 0 3 1 3 3"/></svg>
+          Manage Users<span class="nav-badge" id="nc-users">0</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:8px 16px 12px;border-top:1px solid var(--border);">
+      <div class="sync-indicator"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">synced</span></div>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()" style="width:100%;justify-content:center;margin-top:4px;">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 7A5 5 0 1 1 7 2"/><path d="M12 2v5h-5"/></svg>
+        Refresh
+      </button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="flex:1;"><div class="topbar-title" id="view-title">All Tasks</div></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 2v10M2 7h10"/></svg>
+          New Task
+        </button>
+      </div>
+    </div>
+    <div class="filterbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="4"/><path d="M9.5 9.5l2.5 2.5"/></svg>
+        <input class="search-inp" placeholder="Search tasks…" id="search-inp" oninput="renderTasks()">
+      </div>
+      <button class="fpill on" data-p="all" onclick="setP(this)">All</button>
+      <button class="fpill" data-p="high" onclick="setP(this)">High</button>
+      <button class="fpill" data-p="medium" onclick="setP(this)">Medium</button>
+      <button class="fpill" data-p="low" onclick="setP(this)">Low</button>
+      <select class="fsel" id="sort-sel" onchange="renderTasks()">
+        <option value="due">By due date</option>
+        <option value="priority">By priority</option>
+        <option value="updated">Last updated</option>
+        <option value="created">Date created</option>
+      </select>
+    </div>
+    <div class="content">
+      <div class="perm-note" id="perm-note"></div>
+      <div class="stats" id="stats-row"></div>
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;" id="task-count-lbl">Tasks</div>
+      <div id="task-list"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- CREATE TASK -->
+<div class="overlay" id="create-overlay">
+<div class="modal" style="max-width:560px;">
+  <div class="mh"><div><div class="mh-title">New Task</div><div class="mh-sub" id="create-sub">assign to your team</div></div><button class="close-x" onclick="closeModal('create-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+  <div class="mb">
+    <div class="fr"><label class="fl">Title *</label><input class="fi" id="t-title" placeholder="What needs to be done?"></div>
+    <div class="fr"><label class="fl">Description</label><textarea class="fta" id="t-desc" placeholder="Context, requirements, acceptance criteria…"></textarea></div>
+    <div class="fr2">
+      <div class="fr" style="margin-bottom:0;"><label class="fl">Assign To *</label><select class="fs" id="t-assignee"></select></div>
+      <div class="fr" style="margin-bottom:0;"><label class="fl">Priority</label><select class="fs" id="t-priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+    </div>
+    <div class="fr2" style="margin-top:12px;">
+      <div class="fr" style="margin-bottom:0;"><label class="fl">Due Date *</label><input class="fi" id="t-due" type="date"></div>
+      <div class="fr" style="margin-bottom:0;"><label class="fl">Category</label><input class="fi" id="t-cat" placeholder="e.g. Marketing, Dev"></div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn btn-ghost" onclick="closeModal('create-overlay')">Cancel</button><button class="btn btn-primary" id="create-submit-btn" onclick="createTask()">Create Task</button></div>
+</div>
+</div>
+
+<!-- DETAIL -->
+<div class="overlay" id="detail-overlay">
+<div class="modal dm">
+  <div class="mh">
+    <div style="flex:1;min-width:0;">
+      <div class="mh-title" id="d-title" style="white-space:normal;line-height:1.3;"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;" id="d-badges"></div>
+    </div>
+    <button class="close-x" onclick="closeModal('detail-overlay')" style="flex-shrink:0;margin-top:2px;"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+  </div>
+  <div class="dm-body">
+    <div>
+      <div class="dm-desc" id="d-desc"></div>
+      <div class="upd-sect-hd"><span>Updates</span><span id="d-upd-ct" style="font-family:var(--mono);"></span></div>
+      <div id="d-upd-list"></div>
+      <div class="add-upd" id="d-add-upd">
+        <div class="add-upd-hd">Post Update</div>
+        <div class="add-upd-row">
+          <select class="utype-sel" id="u-type"><option value="progress">Progress</option><option value="blocker">Blocker</option><option value="note">Note</option><option value="done">Completed</option></select>
+          <input class="fi" id="u-text" placeholder="What's the update?" style="flex:1;font-size:11px;padding:6px 10px;">
+        </div>
+        <button class="btn btn-blue btn-sm" id="post-upd-btn" onclick="postUpdate()" style="width:100%;justify-content:center;">Post Update</button>
+      </div>
+    </div>
+    <div id="d-sidebar"></div>
+  </div>
+  <div class="mf" id="d-footer"></div>
+</div>
+</div>
+
+<!-- ORG CHART -->
+<div class="overlay" id="org-overlay">
+<div class="modal" style="max-width:820px;">
+  <div class="mh"><div><div class="mh-title">Org Chart</div><div class="mh-sub">live from sharepoint · TF_Users list</div></div><button class="close-x" onclick="closeModal('org-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+  <div style="padding:18px 22px;">
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+      <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add Team Member</button>
+      <div style="font-size:11px;color:var(--text3);">Adds to TF_Users in SharePoint. Everyone who signs in is auto-registered.</div>
+    </div>
+    <div id="org-tree"></div>
+  </div>
+</div>
+</div>
+
+<!-- USERS -->
+<div class="overlay" id="users-overlay">
+<div class="modal" style="max-width:560px;">
+  <div class="mh"><div><div class="mh-title">Manage Users</div><div class="mh-sub">synced with sharepoint TF_Users</div></div><button class="close-x" onclick="closeModal('users-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+  <div class="mb" id="users-list"></div>
+  <div class="mf"><button class="btn btn-primary" onclick="openAddUserModal()">+ Add User</button></div>
+</div>
+</div>
+
+<!-- ADD/EDIT USER -->
+<div class="overlay" id="adduser-overlay">
+<div class="modal" style="max-width:420px;">
+  <div class="mh"><div><div class="mh-title" id="adduser-title">Add Team Member</div></div><button class="close-x" onclick="closeModal('adduser-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+  <div class="mb">
+    <div class="fr"><label class="fl">Name *</label><input class="fi" id="au-name" placeholder="Full name"></div>
+    <div class="fr"><label class="fl">Email *</label><input class="fi" id="au-email" placeholder="user@company.com"></div>
+    <div class="fr"><label class="fl">Role</label><select class="fs" id="au-role"><option value="member">Team Member</option><option value="manager">Manager</option><option value="superadmin">Super Admin</option></select></div>
+    <div class="fr"><label class="fl">Reports To (Email)</label><select class="fs" id="au-manager"><option value="">— none / top level —</option></select></div>
+  </div>
+  <div class="mf">
+    <button class="btn btn-red btn-sm" id="au-delete-btn" style="margin-right:auto;display:none;" onclick="deleteUser()">Remove</button>
+    <button class="btn btn-ghost" onclick="closeModal('adduser-overlay')">Cancel</button>
+    <button class="btn btn-primary" id="au-save-btn" onclick="saveUser()">Save</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-ico ok" id="toast-ico"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg></div>
+  <span id="toast-msg">Done</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const CFG_KEY = 'taskflow_config_v1';
+let CFG = null;
+let msalInstance = null;
+let accessToken = null;
+let currentUser = null; // TF_Users record
+let msUser = null;      // MSAL account
+
+// In-memory store (synced from SharePoint)
+let users = [];
+let tasks = [];
+let updates = [];
+
+let currentView = 'all';
+let pFilter = 'all';
+let currentTaskId = null;
+let editingUserId = null;
+let demoMode = false;
+
+function loadConfig() {
+  try { const r = localStorage.getItem(CFG_KEY); if (r) return JSON.parse(r); } catch(e) {}
+  return null;
+}
+function saveConfig() {
+  const tenant = document.getElementById('cfg-tenant').value.trim();
+  const client = document.getElementById('cfg-client').value.trim();
+  const site   = document.getElementById('cfg-site').value.trim().replace(/\/$/, '');
+  if (!tenant || !client || !site) { alert('Please fill in all three fields.'); return; }
+  CFG = { tenant, client, site };
+  localStorage.setItem(CFG_KEY, JSON.stringify(CFG));
+  initMSAL();
+}
+
+function loadDemoMode() {
+  demoMode = true;
+  // Seed demo data
+  users = [
+    { id:'u1', name:'Alex (You)', email:'alex@demo.com', role:'superadmin', managerId:null },
+    { id:'u2', name:'Sarah Manager', email:'sarah@demo.com', role:'manager', managerId:'u1' },
+    { id:'u3', name:'Tom Member', email:'tom@demo.com', role:'member', managerId:'u2' },
+    { id:'u4', name:'Layla Member', email:'layla@demo.com', role:'member', managerId:'u2' },
+  ];
+  tasks = [
+    { id:'t1', title:'Q4 Marketing Campaign Brief', desc:'Draft the brief for the Q4 push including budget breakdown.', assigneeId:'u2', createdById:'u1', priority:'high', status:'in-progress', due: offsetDate(3), category:'Marketing', createdAt: Date.now()-86400000*5, updatedAt: Date.now()-3600000 },
+    { id:'t2', title:'Onboard new developer', desc:'Complete onboarding checklist for the new hire starting Monday.', assigneeId:'u3', createdById:'u2', priority:'high', status:'open', due: offsetDate(-2), category:'HR', createdAt: Date.now()-86400000*3, updatedAt: Date.now()-7200000 },
+    { id:'t3', title:'Update website copy', desc:'Revise the About and Services pages with new brand language.', assigneeId:'u4', createdById:'u2', priority:'medium', status:'open', due: offsetDate(7), category:'Design', createdAt: Date.now()-86400000*2, updatedAt: Date.now()-86400000 },
+    { id:'t4', title:'Review analytics report', desc:'Go through last month\'s performance data and flag any anomalies.', assigneeId:'u1', createdById:'u1', priority:'low', status:'done', due: offsetDate(-5), category:'Analytics', createdAt: Date.now()-86400000*10, updatedAt: Date.now()-86400000*2 },
+  ];
+  updates = [
+    { id:'upd1', taskId:'t1', authorId:'u2', text:'Drafted the intro section, working on budget breakdown now.', updateType:'progress', createdAt: Date.now()-3600000 },
+    { id:'upd2', taskId:'t2', authorId:'u3', text:'Waiting on IT to provision laptop access — this is blocking progress.', updateType:'blocker', createdAt: Date.now()-7200000 },
+  ];
+  currentUser = users[0];
+  showApp();
+}
+
+function offsetDate(days) {
+  const d = new Date(); d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+// ══════════════════════════════════════════════════════
+// MSAL AUTH
+// ══════════════════════════════════════════════════════
+function initMSAL() {
+  showScreen('login');
+  const msalConfig = {
+    auth: {
+      clientId: CFG.client,
+      authority: `https://login.microsoftonline.com/${CFG.tenant}`,
+      redirectUri: window.location.href.split('?')[0].split('#')[0]
+    },
+    cache: { cacheLocation: 'sessionStorage' }
+  };
+  msalInstance = new msal.PublicClientApplication(msalConfig);
+  msalInstance.initialize().then(() => {
+    msalInstance.handleRedirectPromise().then(resp => {
+      if (resp && resp.accessToken) { accessToken = resp.accessToken; msUser = resp.account; loadUserAndStart(); }
+      else {
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
+      }
+    }).catch(console.error);
+  });
+}
+
+function signIn() {
+  const scopes = ['User.Read', `${CFG.site.split('/sites')[0]}/.default`];
+  msalInstance.loginRedirect({ scopes });
+}
+
+function acquireToken() {
+  showScreen('loading'); setLoadingText('acquiring token…');
+  const scopes = ['User.Read', `${CFG.site.split('/sites')[0]}/.default`];
+  msalInstance.acquireTokenSilent({ scopes, account: msUser })
+    .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
+    .catch(() => msalInstance.acquireTokenRedirect({ scopes }));
+}
+
+function signOut() {
+  if (demoMode) { location.reload(); return; }
+  msalInstance.logoutRedirect();
+}
+
+// ══════════════════════════════════════════════════════
+// SHAREPOINT API
+// ══════════════════════════════════════════════════════
+function spHeaders() {
+  return { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json' };
+}
+
+async function spGet(path) {
+  const res = await fetch(`${CFG.site}/_api${path}`, { headers: spHeaders() });
+  if (!res.ok) throw new Error(`SP GET failed: ${res.status} ${path}`);
+  return res.json();
+}
+
+async function spPost(path, body) {
+  const res = await fetch(`${CFG.site}/_api${path}`, { method: 'POST', headers: { ...spHeaders(), 'X-HTTP-Method': undefined }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`SP POST failed: ${res.status}`);
+  return res.json();
+}
+
+async function spPatch(path, body) {
+  const headers = { ...spHeaders(), 'X-HTTP-Method': 'MERGE', 'IF-MATCH': '*' };
+  const res = await fetch(`${CFG.site}/_api${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`SP PATCH failed: ${res.status}`);
+}
+
+async function spDelete(path) {
+  const headers = { ...spHeaders(), 'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*' };
+  const res = await fetch(`${CFG.site}/_api${path}`, { method: 'POST', headers });
+  if (!res.ok) throw new Error(`SP DELETE failed: ${res.status}`);
+}
+
+async function getListItems(listName) {
+  const data = await spGet(`/web/lists/getbytitle('${listName}')/items?$top=500`);
+  return data.value;
+}
+
+// ══════════════════════════════════════════════════════
+// LOAD & SYNC
+// ══════════════════════════════════════════════════════
+async function loadUserAndStart() {
+  showScreen('loading'); setLoadingText('loading team data…');
+  try {
+    await syncAll();
+    // Auto-register user if first time
+    const email = msUser.username.toLowerCase();
+    let cu = users.find(u => u.email.toLowerCase() === email);
+    if (!cu) {
+      setLoadingText('registering you…');
+      const created = await spPost(`/web/lists/getbytitle('TF_Users')/items`, {
+        Title: msUser.name || msUser.username,
+        Email: email,
+        Role: 'member',
+        ManagerEmail: '',
+        AzureId: msUser.localAccountId || ''
+      });
+      cu = mapUser(created);
+      users.push(cu);
+    }
+    currentUser = cu;
+    showApp();
+  } catch(e) {
+    console.error(e);
+    toast('Failed to connect to SharePoint. Check your config and permissions.', true);
+    showScreen('login');
+  }
+}
+
+async function syncAll() {
+  setSyncState('syncing');
+  try {
+    const [rawUsers, rawTasks, rawUpdates] = await Promise.all([
+      getListItems('TF_Users'),
+      getListItems('TF_Tasks'),
+      getListItems('TF_Updates')
+    ]);
+    users   = rawUsers.map(mapUser);
+    tasks   = rawTasks.map(mapTask);
+    updates = rawUpdates.map(mapUpdate);
+    // Attach updates to tasks
+    tasks.forEach(t => { t.updates = updates.filter(u => u.taskId === String(t.id)); });
+    setSyncState('ok');
+    renderAll();
+  } catch(e) {
+    setSyncState('error');
+    throw e;
+  }
+}
+
+async function refreshAll() {
+  if (demoMode) { renderAll(); toast('Demo mode — no live sync'); return; }
+  await syncAll();
+  toast('Refreshed');
+}
+
+function mapUser(r) {
+  return { id: String(r.ID || r.id), spId: r.ID, name: r.Title, email: (r.Email||'').toLowerCase(), role: r.Role || 'member', managerId: r.ManagerEmail ? String(users.find(u=>u.email===(r.ManagerEmail||'').toLowerCase())?.id||'') : null, managerEmail: (r.ManagerEmail||'').toLowerCase() };
+}
+function mapTask(r) {
+  return { id: String(r.ID), spId: r.ID, title: r.Title, desc: r.Description||'', assigneeId: String(users.find(u=>u.email===(r.AssigneeEmail||'').toLowerCase())?.id||''), assigneeEmail: (r.AssigneeEmail||'').toLowerCase(), createdById: String(users.find(u=>u.email===(r.CreatedByEmail||'').toLowerCase())?.id||''), createdByEmail: (r.CreatedByEmail||'').toLowerCase(), priority: r.Priority||'medium', status: r.Status||'open', due: r.DueDate ? r.DueDate.split('T')[0] : '', category: r.Category||'', createdAt: new Date(r.Created||Date.now()).getTime(), updatedAt: new Date(r.Modified||Date.now()).getTime(), updates: [] };
+}
+function mapUpdate(r) {
+  return { id: String(r.ID), taskId: String(r.TaskId), authorId: String(users.find(u=>u.email===(r.AuthorEmail||'').toLowerCase())?.id||''), authorEmail: (r.AuthorEmail||'').toLowerCase(), text: r.Title||'', updateType: r.UpdateType||'note', createdAt: new Date(r.Created||Date.now()).getTime() };
+}
+
+// ══════════════════════════════════════════════════════
+// ROLE HELPERS
+// ══════════════════════════════════════════════════════
+function me() { return currentUser; }
+function isSA() { return currentUser && currentUser.role === 'superadmin'; }
+function isMgr() { return currentUser && (currentUser.role === 'manager' || currentUser.role === 'superadmin'); }
+
+function getSubtree(userId, includeRoot=false) {
+  const ids = includeRoot ? [userId] : [];
+  const direct = users.filter(u => u.id === userId ? false : u.managerId === userId || u.managerEmail === (users.find(x=>x.id===userId)||{}).email).map(u => u.id);
+  for (const id of direct) { ids.push(id); ids.push(...getSubtree(id)); }
+  return [...new Set(ids)];
+}
+
+function assignableUsers() {
+  const u = me(); if (!u) return [];
+  if (u.role === 'superadmin') return users;
+  if (u.role === 'manager') { const sub = getSubtree(u.id); return users.filter(x => sub.includes(x.id) || x.id === u.id); }
+  return [u];
+}
+
+function visibleTasks() {
+  const u = me(); if (!u) return [];
+  if (u.role === 'superadmin') return tasks;
+  if (u.role === 'manager') { const sub = getSubtree(u.id, true); return tasks.filter(t => sub.includes(t.assigneeId) || t.createdById === u.id || t.assigneeId === u.id); }
+  return tasks.filter(t => t.assigneeId === u.id || t.createdById === u.id);
+}
+
+function canEditTask(task) {
+  const u = me(); if (!u) return false;
+  if (u.role === 'superadmin') return true;
+  if (u.role === 'manager') { const sub = getSubtree(u.id, true); return sub.includes(task.assigneeId) || task.createdById === u.id; }
+  return task.assigneeId === u.id || task.createdById === u.id;
+}
+
+function canUpdate(task) {
+  const u = me(); if (!u) return false;
+  if (u.role === 'superadmin') return true;
+  return task.assigneeId === u.id || task.createdById === u.id || (u.role === 'manager' && getSubtree(u.id, true).includes(task.assigneeId));
+}
+
+// ══════════════════════════════════════════════════════
+// TASK CRUD (SharePoint)
+// ══════════════════════════════════════════════════════
+function openCreateModal() {
+  const assignable = assignableUsers();
+  const sel = document.getElementById('t-assignee');
+  const u = me();
+  sel.innerHTML = assignable.map(a => `<option value="${a.id}"${a.id===u.id?' selected':''}>${a.name}${a.id===u.id?' (me)':''}</option>`).join('');
+  ['t-title','t-desc','t-cat'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('t-due').value = '';
+  document.getElementById('t-priority').value = 'medium';
+  document.getElementById('create-sub').textContent = u.role === 'member' ? 'add to your own tasks' : 'assign to your team';
+  openModal('create-overlay');
+}
+
+async function createTask() {
+  const u = me(); if (!u) return;
+  const title = document.getElementById('t-title').value.trim();
+  const assigneeId = document.getElementById('t-assignee').value;
+  const due = document.getElementById('t-due').value;
+  if (!title || !assigneeId || !due) { toast('Title, assignee & due date required', true); return; }
+  const assignee = users.find(x => x.id === assigneeId);
+  if (!assignee) return;
+
+  const btn = document.getElementById('create-submit-btn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+
+  try {
+    if (demoMode) {
+      const t = { id: uid(), title, desc: document.getElementById('t-desc').value.trim(), assigneeId, assigneeEmail: assignee.email, createdById: u.id, createdByEmail: u.email, priority: document.getElementById('t-priority').value, status: 'open', due, category: document.getElementById('t-cat').value.trim(), createdAt: Date.now(), updatedAt: Date.now(), updates: [] };
+      tasks.unshift(t);
+    } else {
+      await spPost(`/web/lists/getbytitle('TF_Tasks')/items`, {
+        Title: title,
+        Description: document.getElementById('t-desc').value.trim(),
+        AssigneeEmail: assignee.email,
+        CreatedByEmail: u.email,
+        Priority: document.getElementById('t-priority').value,
+        Status: 'open',
+        DueDate: due + 'T00:00:00Z',
+        Category: document.getElementById('t-cat').value.trim()
+      });
+      await syncAll();
+    }
+    renderAll();
+    closeModal('create-overlay');
+    toast('Task created');
+  } catch(e) { toast('Failed to create task', true); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = 'Create Task'; }
+}
+
+// ══════════════════════════════════════════════════════
+// DETAIL
+// ══════════════════════════════════════════════════════
+function openDetail(id) { currentTaskId = id; renderDetail(); openModal('detail-overlay'); }
+
+function renderDetail() {
+  const t = tasks.find(x => x.id === currentTaskId); if (!t) return;
+  const assignee = users.find(x => x.id === t.assigneeId);
+  const creator  = users.find(x => x.id === t.createdById);
+  const editable = canEditTask(t);
+  const updatable = canUpdate(t);
+
+  document.getElementById('d-title').textContent = t.title;
+  const sL = {open:'Open','in-progress':'In Progress',done:'Done',blocked:'Blocked'}[t.status]||t.status;
+  const sC = {open:'bs-open','in-progress':'bs-in-progress',done:'bs-done',blocked:'bs-blocked'}[t.status]||'bs-open';
+  document.getElementById('d-badges').innerHTML = `<span class="badge ${sC}">${sL}</span><span class="badge bp-${t.priority}">${t.priority}</span>${t.category?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${t.category}</span>`:''}${assignee?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${assignee.name}</span>`:''}`;
+  document.getElementById('d-desc').textContent = t.desc || 'No description provided.';
+
+  const ul = document.getElementById('d-upd-list');
+  document.getElementById('d-upd-ct').textContent = t.updates.length || '';
+  if (!t.updates.length) { ul.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 0 2px;">No updates yet.</div>'; }
+  else {
+    const tm = {progress:'ut-progress',blocker:'ut-blocker',done:'ut-done',note:'ut-note'};
+    const tc = {progress:'background:var(--blue-bg);color:var(--blue)',blocker:'background:var(--red-bg);color:var(--red)',done:'background:var(--green-bg);color:var(--green)',note:'background:var(--purple-bg);color:var(--purple)'};
+    ul.innerHTML = t.updates.slice().sort((a,b)=>b.createdAt-a.createdAt).map(upd => {
+      const author = users.find(x=>x.id===upd.authorId);
+      return `<div class="upd-item ${tm[upd.updateType]||''}"><div class="upd-meta"><span class="upd-author">${author?author.name:upd.authorEmail}</span><span class="upd-time">${fmtDate(upd.createdAt)}</span><span class="upd-tag" style="${tc[upd.updateType]||''}">${upd.updateType}</span></div><div class="upd-text">${upd.text}</div></div>`;
+    }).join('');
+  }
+  document.getElementById('d-add-upd').style.display = updatable ? 'block' : 'none';
+
+  const dl = daysUntil(t.due), pct = Math.min(100,Math.max(0,calcPct(t)));
+  document.getElementById('d-sidebar').innerHTML = `
+    <div>
+      <div class="dp-lbl">Assigned to</div>
+      <div class="dp-val" style="display:flex;align-items:center;gap:6px;">${assignee?`<div class="mini-av" style="${avColor(assignee.name)};width:22px;height:22px;font-size:9px;">${initials(assignee.name)}</div>${assignee.name}`:'—'}</div>
+      <div class="dp-lbl" style="margin-top:10px;">Created by</div>
+      <div class="dp-val">${creator?creator.name:'—'}</div>
+      <div class="dp-lbl" style="margin-top:10px;">Due Date</div>
+      <div class="dp-val" style="${dl<0&&t.status!=='done'?'color:var(--red)':dl<=2&&t.status!=='done'?'color:var(--amber)':''}">${fmtFullDate(t.due)}<div style="font-size:10px;color:var(--text3);margin-top:1px;">${t.status!=='done'?(dl<0?Math.abs(dl)+'d overdue':dl===0?'due today':dl+'d left'):'completed'}</div></div>
+      <div class="dp-lbl" style="margin-top:10px;">Timeline</div>
+      <div class="tl-bar-bg"><div class="tl-bar-fill" style="width:${pct}%;${pct>=100?'background:var(--red)':''}"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px;">${Math.round(pct)}% elapsed</div>
+      ${editable?`<div class="dp-lbl" style="margin-top:12px;">Change Status</div><div class="act-col">
+        ${t.status!=='in-progress'&&t.status!=='done'?`<button class="btn btn-blue btn-sm" onclick="chgStatus('in-progress')">Mark In Progress</button>`:''}
+        ${t.status!=='blocked'&&t.status!=='done'?`<button class="btn btn-red btn-sm" onclick="chgStatus('blocked')">Mark Blocked</button>`:''}
+        ${t.status!=='open'&&t.status!=='done'?`<button class="btn btn-ghost btn-sm" onclick="chgStatus('open')">Reopen</button>`:''}
+        ${t.status!=='done'?`<button class="btn btn-green btn-sm" onclick="chgStatus('done')">Mark Complete</button>`:`<button class="btn btn-ghost btn-sm" onclick="chgStatus('open')">Reopen</button>`}
+      </div>`:''}
+    </div>`;
+
+  const canDel = isSA() || (me() && t.createdById === me().id);
+  document.getElementById('d-footer').innerHTML = (canDel?`<button class="btn btn-red btn-sm" style="margin-right:auto;" onclick="deleteTask()">Delete Task</button>`:'') + `<button class="btn btn-ghost" onclick="closeModal('detail-overlay')">Close</button>`;
+}
+
+async function postUpdate() {
+  const text = document.getElementById('u-text').value.trim();
+  if (!text) { toast('Write an update first', true); return; }
+  const u = me(); if (!u) return;
+  const t = tasks.find(x => x.id === currentTaskId); if (!t) return;
+  const type = document.getElementById('u-type').value;
+
+  const btn = document.getElementById('post-upd-btn');
+  btn.disabled = true; btn.textContent = 'Posting…';
+
+  try {
+    const newStatus = type==='done'?'done':type==='blocker'?'blocked':type==='progress'&&t.status==='open'?'in-progress':t.status;
+
+    if (demoMode) {
+      t.updates.push({ id: uid(), taskId: t.id, authorId: u.id, authorEmail: u.email, text, updateType: type, createdAt: Date.now() });
+      t.status = newStatus; t.updatedAt = Date.now();
+    } else {
+      await Promise.all([
+        spPost(`/web/lists/getbytitle('TF_Updates')/items`, { Title: text, TaskId: t.id, AuthorEmail: u.email, UpdateType: type }),
+        spPatch(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`, { Status: newStatus })
+      ]);
+      await syncAll();
+    }
+    document.getElementById('u-text').value = '';
+    renderDetail(); renderAll();
+    toast('Update posted');
+  } catch(e) { toast('Failed to post update', true); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = 'Post Update'; }
+}
+
+async function chgStatus(s) {
+  const t = tasks.find(x => x.id === currentTaskId); if (!t) return;
+  try {
+    if (demoMode) { t.status = s; t.updatedAt = Date.now(); }
+    else { await spPatch(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`, { Status: s }); await syncAll(); }
+    renderDetail(); renderAll(); toast('Status updated');
+  } catch(e) { toast('Failed to update status', true); }
+}
+
+async function deleteTask() {
+  if (!confirm('Delete this task and all its updates?')) return;
+  const t = tasks.find(x => x.id === currentTaskId); if (!t) return;
+  try {
+    if (demoMode) {
+      tasks = tasks.filter(x => x.id !== currentTaskId);
+      updates = updates.filter(x => x.taskId !== currentTaskId);
+    } else {
+      const updToDelete = updates.filter(u => u.taskId === currentTaskId);
+      await Promise.all(updToDelete.map(u => spDelete(`/web/lists/getbytitle('TF_Updates')/items(${u.id})`)));
+      await spDelete(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`);
+      await syncAll();
+    }
+    closeModal('detail-overlay'); renderAll(); toast('Task deleted');
+  } catch(e) { toast('Failed to delete task', true); }
+}
+
+// ══════════════════════════════════════════════════════
+// USER MANAGEMENT
+// ══════════════════════════════════════════════════════
+function openUsersModal() { renderUsersList(); openModal('users-overlay'); }
+function renderUsersList() {
+  const list = document.getElementById('users-list');
+  list.innerHTML = users.map(u => {
+    const mgr = users.find(x => x.id === u.managerId || x.email === u.managerEmail);
+    return `<div class="user-row"><div class="user-av" style="${avColor(u.name)}">${initials(u.name)}</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;">${u.name}${u.id===me()?.id?' <span style="font-size:10px;color:var(--text3);">(you)</span>':''}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">${u.email} · ${mgr?'→ '+mgr.name:'top level'}</div></div>${roleBadge(u.role)}<button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${u.id}')">Edit</button></div>`;
+  }).join('') || '<div style="font-size:12px;color:var(--text3);">No users yet.</div>';
+}
+
+function openAddUserModal() {
+  editingUserId = null;
+  document.getElementById('adduser-title').textContent = 'Add Team Member';
+  ['au-name','au-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('au-role').value = 'member';
+  document.getElementById('au-delete-btn').style.display = 'none';
+  populateMgrSel('au-manager', '', null);
+  closeModal('users-overlay'); closeModal('org-overlay'); openModal('adduser-overlay');
+}
+
+function openEditUserModal(id) {
+  editingUserId = id;
+  const u = users.find(x => x.id === id); if (!u) return;
+  document.getElementById('adduser-title').textContent = 'Edit User';
+  document.getElementById('au-name').value = u.name;
+  document.getElementById('au-email').value = u.email;
+  document.getElementById('au-role').value = u.role;
+  document.getElementById('au-delete-btn').style.display = id === me()?.id ? 'none' : 'flex';
+  populateMgrSel('au-manager', u.managerEmail, u.email);
+  closeModal('users-overlay'); openModal('adduser-overlay');
+}
+
+async function saveUser() {
+  const name  = document.getElementById('au-name').value.trim();
+  const email = document.getElementById('au-email').value.trim().toLowerCase();
+  const role  = document.getElementById('au-role').value;
+  const mgrEmail = document.getElementById('au-manager').value || '';
+  if (!name || !email) { toast('Name and email required', true); return; }
+
+  const btn = document.getElementById('au-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    if (demoMode) {
+      if (editingUserId) {
+        const u = users.find(x => x.id === editingUserId);
+        if (u) { u.name = name; u.email = email; u.role = role; u.managerEmail = mgrEmail; u.managerId = users.find(x=>x.email===mgrEmail)?.id || null; }
+      } else {
+        users.push({ id: uid(), name, email, role, managerId: users.find(x=>x.email===mgrEmail)?.id||null, managerEmail: mgrEmail });
+      }
+    } else {
+      const payload = { Title: name, Email: email, Role: role, ManagerEmail: mgrEmail };
+      if (editingUserId) {
+        const u = users.find(x => x.id === editingUserId);
+        await spPatch(`/web/lists/getbytitle('TF_Users')/items(${u.spId})`, payload);
+      } else {
+        await spPost(`/web/lists/getbytitle('TF_Users')/items`, payload);
+      }
+      await syncAll();
+    }
+    updateSidebar(); renderAll(); renderUsersList();
+    closeModal('adduser-overlay'); toast(editingUserId ? 'User updated' : 'User added');
+  } catch(e) { toast('Failed to save user', true); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = 'Save'; }
+}
+
+async function deleteUser() {
+  if (!editingUserId || !confirm('Remove this user from AVAR Tasks?')) return;
+  const u = users.find(x => x.id === editingUserId); if (!u) return;
+  try {
+    if (!demoMode) { await spDelete(`/web/lists/getbytitle('TF_Users')/items(${u.spId})`); await syncAll(); }
+    else { users = users.filter(x => x.id !== editingUserId); }
+    closeModal('adduser-overlay'); renderAll(); toast('User removed');
+  } catch(e) { toast('Failed to remove user', true); }
+}
+
+// ══════════════════════════════════════════════════════
+// ORG CHART
+// ══════════════════════════════════════════════════════
+function openOrgModal() { renderOrgTree(); openModal('org-overlay'); }
+function renderOrgTree() {
+  const roots = users.filter(u => !u.managerId && !u.managerEmail);
+  document.getElementById('org-tree').innerHTML = roots.length ? roots.map(u => orgNode(u)).join('') : '<div style="font-size:12px;color:var(--text3);">No users yet.</div>';
+}
+function orgNode(u) {
+  const children = users.filter(x => x.managerId === u.id || (x.managerEmail && x.managerEmail === u.email));
+  const rc = u.role==='superadmin'?'#7b89b5':u.role==='manager'?'#5a6da4':'#3a5092';
+  const rl = u.role==='superadmin'?'Super Admin':u.role==='manager'?'Manager':'Member';
+  const open = tasks.filter(t=>t.assigneeId===u.id&&t.status!=='done').length;
+  return `<div class="org-node"><div class="org-node-row"><div class="org-av" style="${avColor(u.name)}">${initials(u.name)}</div><div style="flex:1;"><div style="font-size:12px;font-weight:500;">${u.name}${u.id===me()?.id?' <span style="font-size:9px;color:var(--text3);">(you)</span>':''}</div><div style="font-size:10px;font-family:var(--mono);color:${rc};">${rl}${open?' · '+open+' open':''}</div></div>${isSA()?`<button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${u.id}')">Edit</button>`:''}</div>${children.length?`<div class="org-children">${children.map(c=>orgNode(c)).join('')}</div>`:''}</div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function renderAll() { renderStats(); renderTasks(); updateSidebar(); }
+
+function getViewTasks() {
+  const u = me();
+  const base = visibleTasks();
+  const search = document.getElementById('search-inp').value.toLowerCase();
+  const sort = document.getElementById('sort-sel').value;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let list = base.filter(t => {
+    if (pFilter !== 'all' && t.priority !== pFilter) return false;
+    if (search) { const a = users.find(x=>x.id===t.assigneeId); if (!t.title.toLowerCase().includes(search) && !(a&&a.name.toLowerCase().includes(search)) && !t.desc.toLowerCase().includes(search)) return false; }
+    if (currentView === 'all') return true;
+    if (currentView === 'mine') return u && (t.assigneeId===u.id||t.createdById===u.id);
+    if (currentView === 'delegated') return u && t.createdById===u.id && t.assigneeId!==u.id;
+    if (currentView === 'overdue') return t.status!=='done' && new Date(t.due+'T00:00:00')<today;
+    if (currentView === 'done') return t.status==='done';
+    if (currentView.startsWith('member:')) return t.assigneeId===currentView.slice(7);
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    if(sort==='due') return a.due.localeCompare(b.due);
+    if(sort==='priority') return {high:0,medium:1,low:2}[a.priority]-{high:0,medium:1,low:2}[b.priority];
+    if(sort==='updated') return b.updatedAt-a.updatedAt;
+    return b.createdAt-a.createdAt;
+  });
+  return list;
+}
+
+function renderTasks() {
+  const list2 = getViewTasks();
+  const today = new Date(); today.setHours(0,0,0,0);
+  document.getElementById('task-count-lbl').textContent = `${list2.length} task${list2.length!==1?'s':''}`;
+  const el = document.getElementById('task-list');
+  if (!list2.length) { el.innerHTML = `<div class="empty"><svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1"><rect x="4" y="4" width="28" height="28" rx="5"/><path d="M11 18h14M11 12h14M11 24h8"/></svg><p style="font-size:12px;">No tasks found</p></div>`; return; }
+  el.innerHTML = list2.map(t => {
+    const a = users.find(x=>x.id===t.assigneeId);
+    const due = new Date(t.due+'T00:00:00');
+    const overdue = t.status!=='done'&&due<today;
+    const atRisk = t.status!=='done'&&!overdue&&(due-today)/86400000<=2;
+    const bc = t.status==='done'?'tc-done':overdue?'tc-overdue':atRisk?'tc-risk':'tc-ok';
+    const sC = {open:'bs-open','in-progress':'bs-in-progress',done:'bs-done',blocked:'bs-blocked'}[t.status]||'bs-open';
+    const sL = {open:'Open','in-progress':'In Progress',done:'Done',blocked:'Blocked'}[t.status]||t.status;
+    const dl = daysUntil(t.due);
+    return `<div class="task-card ${bc}" onclick="openDetail('${t.id}')">
+      <div class="tc-top"><div class="tc-dot dp-${t.priority}"></div><div class="tc-body"><div class="tc-title">${t.title}</div>${t.desc?`<div class="tc-desc">${t.desc}</div>`:''}</div><div class="tc-right"><span class="badge ${sC}">${sL}</span>${t.category?`<span class="badge" style="background:var(--bg4);color:var(--text3);">${t.category}</span>`:''}</div></div>
+      <div class="tc-foot">${a?`<div class="chip"><div class="mini-av" style="${avColor(a.name)}">${initials(a.name)}</div>${a.name}</div>`:''}<div class="tc-meta"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="5"/><path d="M6 3.5v3l1.5 1.5"/></svg><span style="${overdue&&t.status!=='done'?'color:var(--red)':atRisk?'color:var(--amber)':''}">${overdue&&t.status!=='done'?Math.abs(dl)+'d overdue':dl===0?'today':fmtFullDate(t.due)}</span></div>${t.updates.length?`<div class="upd-ct"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 2h8v7H2z"/><path d="M4 5h4M4 7h2"/></svg>${t.updates.length}</div>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const base = visibleTasks();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const done = base.filter(t=>t.status==='done').length;
+  const overdue = base.filter(t=>t.status!=='done'&&new Date(t.due+'T00:00:00')<today).length;
+  const inProg = base.filter(t=>t.status==='in-progress').length;
+  const rate = base.length?Math.round(done/base.length*100):0;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat"><div class="stat-lbl">Visible Tasks</div><div class="stat-val vc">${base.length}</div><div class="stat-hint">in your scope</div></div>
+    <div class="stat"><div class="stat-lbl">In Progress</div><div class="stat-val va">${inProg}</div><div class="stat-hint">active work</div></div>
+    <div class="stat"><div class="stat-lbl">Overdue</div><div class="stat-val vr">${overdue}</div><div class="stat-hint">need attention</div></div>
+    <div class="stat"><div class="stat-lbl">Completed</div><div class="stat-val vg">${done}</div><div class="stat-hint">${rate}% rate</div></div>`;
+  const u = me();
+  const nc = fn => base.filter(fn).length;
+  document.getElementById('nc-all').textContent = base.length;
+  document.getElementById('nc-mine').textContent = u?nc(t=>t.assigneeId===u.id||t.createdById===u.id):0;
+  document.getElementById('nc-delegated').textContent = u?nc(t=>t.createdById===u.id&&t.assigneeId!==u.id):0;
+  document.getElementById('nc-overdue').textContent = nc(t=>t.status!=='done'&&new Date(t.due+'T00:00:00')<today);
+  document.getElementById('nc-done').textContent = nc(t=>t.status==='done');
+  document.getElementById('nc-users').textContent = users.length;
+}
+
+function updateSidebar() {
+  const u = me(); if (!u) return;
+  const av = document.getElementById('sb-av'); av.textContent = initials(u.name); av.style.cssText = avColor(u.name);
+  document.getElementById('sb-name').textContent = u.name;
+  const rc = {superadmin:'#7b89b5',manager:'#5a6da4',member:'#3a5092'};
+  const rl = {superadmin:'Super Admin',manager:'Manager',member:'Team Member'};
+  const rt = document.getElementById('sb-role-tag'); rt.textContent = rl[u.role]||u.role; rt.style.color = rc[u.role]||'var(--text3)';
+  if (CFG) document.getElementById('sb-site-label').textContent = demoMode ? 'demo mode' : new URL(CFG.site).hostname.split('.')[0];
+  document.getElementById('admin-nav-sect').style.display = isSA() ? 'block' : 'none';
+  const teamSect = document.getElementById('team-nav-sect');
+  const teamItems = document.getElementById('team-nav-items');
+  if (isMgr()) {
+    teamSect.style.display = 'block';
+    const sub = isSA() ? users.filter(x=>x.id!==u.id) : users.filter(x=>getSubtree(u.id).includes(x.id));
+    teamItems.innerHTML = sub.map(m => {
+      const open = tasks.filter(t=>t.assigneeId===m.id&&t.status!=='done').length;
+      return `<div class="nav-item" data-view="member:${m.id}" onclick="setView(this)"><div class="mini-av" style="${avColor(m.name)};width:16px;height:16px;font-size:8px;">${initials(m.name)}</div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>${open?`<span class="nav-badge">${open}</span>`:''}</div>`;
+    }).join('') || '<div style="font-size:11px;color:var(--text3);padding:4px 8px;">No reports yet</div>';
+  } else { teamSect.style.display = 'none'; }
+  const note = document.getElementById('perm-note');
+  if (u.role==='member') { note.textContent = 'You see tasks assigned to or created by you. Add your own tasks and update tasks assigned to you.'; note.classList.add('show'); }
+  else { note.classList.remove('show'); }
+}
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+function setView(el) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  currentView = el.dataset.view;
+  const vl = {all:'All Tasks',mine:'My Tasks',delegated:'Delegated by Me',overdue:'Overdue',done:'Completed'};
+  let title = vl[currentView];
+  if (!title && currentView.startsWith('member:')) { const u2 = users.find(x=>x.id===currentView.slice(7)); title = u2?u2.name+"'s Tasks":'Member Tasks'; }
+  document.getElementById('view-title').textContent = title||'Tasks';
+  renderTasks();
+}
+function setP(el) { document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('on')); el.classList.add('on'); pFilter=el.dataset.p; renderTasks(); }
+
+// ══════════════════════════════════════════════════════
+// UI UTILS
+// ══════════════════════════════════════════════════════
+function showScreen(s) {
+  document.getElementById('config-screen').style.display = s==='config'?'flex':'none';
+  document.getElementById('login-screen').style.display = s==='login'?'flex':'none';
+  document.getElementById('loading-screen').style.display = s==='loading'?'flex':'none';
+  document.getElementById('app-screen').style.display = s==='app'?'block':'none';
+}
+function showApp() { showScreen('app'); renderAll(); }
+function setLoadingText(t) { document.getElementById('loading-text').textContent = t; }
+function setSyncState(s) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot' + (s==='syncing'?' syncing':s==='error'?' error':'');
+  lbl.textContent = s==='syncing'?'syncing…':s==='error'?'sync error':'synced';
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(el=>{ el.addEventListener('click',function(e){if(e.target===this)closeModal(this.id);}); });
+
+function toast(msg, err=false) {
+  const t=document.getElementById('toast'), ico=document.getElementById('toast-ico');
+  document.getElementById('toast-msg').textContent=msg;
+  ico.className='toast-ico '+(err?'err':'ok');
+  ico.innerHTML=err?'<svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8"/></svg>':'<svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg>';
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function populateMgrSel(selId, currentVal, excludeEmail) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">— none / top level —</option>';
+  users.filter(u=>u.email!==excludeEmail).forEach(u=>{ const opt=document.createElement('option'); opt.value=u.email; opt.textContent=u.name; if(u.email===currentVal||u.id===currentVal)opt.selected=true; sel.appendChild(opt); });
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function uid() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function initials(n) { return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function daysUntil(d) { const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(d+'T00:00:00')-t)/86400000); }
+function calcPct(t) { const s=t.createdAt,e=new Date(t.due+'T00:00:00').getTime(),n=Date.now(); return e<=s?100:((n-s)/(e-s))*100; }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function fmtFullDate(s) { return new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+const AVC=['#3a5092','#2e3f75','#5a6da4','#7b89b5','#1e2d5a','#4a5e9a','#6677ae','#8290be','#2a3a7a','#344780','#4d60a0'];
+function avColor(name){let h=0;for(let i=0;i<(name||'').length;i++)h=(h*31+name.charCodeAt(i))%AVC.length;return`background:${AVC[Math.abs(h)]};`;}
+function roleBadge(r){const cl={superadmin:'br-sa',manager:'br-manager',member:'br-member'}[r]||'';const lb={superadmin:'Super Admin',manager:'Manager',member:'Member'}[r]||r;return`<span class="badge ${cl}">${lb}</span>`;}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+CFG = loadConfig();
+if (CFG) {
+  // Pre-fill config form
+  document.getElementById('cfg-tenant').value = CFG.tenant;
+  document.getElementById('cfg-client').value = CFG.client;
+  document.getElementById('cfg-site').value = CFG.site;
+  initMSAL();
+} else {
+  showScreen('config');
+}
+</script>
+</body>
+</html>
