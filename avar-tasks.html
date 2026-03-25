@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AVAR — Task Management</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library-browser/3.27.0/msal-browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -606,26 +605,30 @@ function offsetDate(days) {
 // MSAL AUTH
 // ══════════════════════════════════════════════════════
 function initMSAL() {
-  showScreen('login');
+  setLoginStatus('Connecting to Microsoft…');
   const msalConfig = {
     auth: {
       clientId: CFG.client,
       authority: `https://login.microsoftonline.com/${CFG.tenant}`,
-      redirectUri: CFG.redirectUri || 'https://lyric-logic.github.io/avar-tasks/avar-tasks.html',
+      redirectUri: CFG.redirectUri,
       navigateToLoginRequestUrl: false
     },
     cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
   };
-  msalInstance = new msal.PublicClientApplication(msalConfig);
-  msalInstance.initialize().then(() => {
-    setLoginStatus('Ready — click Sign in with Microsoft');
-    // Check if we already have an account cached
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
-  }).catch(e => {
-    setLoginStatus('MSAL init error: ' + e.message, true);
-    console.error('MSAL init error', e);
-  });
+  try {
+    msalInstance = new msal.PublicClientApplication(msalConfig);
+    msalInstance.initialize().then(() => {
+      setLoginStatus('Ready — click Sign in with Microsoft');
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
+    }).catch(e => {
+      setLoginStatus('Init error: ' + (e.message || e.errorCode || JSON.stringify(e)), true);
+      console.error('MSAL init error', e);
+    });
+  } catch(e) {
+    setLoginStatus('Startup error: ' + (e.message || JSON.stringify(e)), true);
+    console.error('MSAL startup error', e);
+  }
 }
 
 function setLoginStatus(msg, isError=false) {
@@ -1249,9 +1252,41 @@ CFG = {
   site:   'https://avarglobal.sharepoint.com/sites/DigitalWorkspace',
   redirectUri: 'https://lyric-logic.github.io/avar-tasks/avar-tasks.html'
 };
-// Save to localStorage so acquireToken picks it up
 localStorage.setItem(CFG_KEY, JSON.stringify(CFG));
-initMSAL();
+
+// Show login screen immediately while MSAL loads
+showScreen('login');
+setLoginStatus('Loading auth library…');
+
+// Load MSAL dynamically with multiple CDN fallbacks
+var msalCDNs = [
+  'https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.7.0/lib/msal-browser.min.js',
+  'https://unpkg.com/@azure/msal-browser@3.7.0/lib/msal-browser.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library-browser/3.7.0/msal-browser.min.js'
+];
+var msalCDNIdx = 0;
+
+function loadNextMSAL() {
+  if (msalCDNIdx >= msalCDNs.length) {
+    setLoginStatus('Could not load auth library — please check your internet connection and refresh.', true);
+    return;
+  }
+  var src = msalCDNs[msalCDNIdx++];
+  var s = document.createElement('script');
+  s.src = src;
+  s.onload = function() {
+    if (typeof msal === 'undefined') { loadNextMSAL(); return; }
+    setLoginStatus('Auth library loaded — initializing…');
+    initMSAL();
+  };
+  s.onerror = function() {
+    setLoginStatus('CDN failed, trying next source…');
+    loadNextMSAL();
+  };
+  document.head.appendChild(s);
+}
+
+loadNextMSAL();
 </script>
 </body>
 </html>
