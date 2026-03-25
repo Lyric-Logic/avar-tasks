@@ -641,7 +641,7 @@ function signIn() {
     setLoginStatus('Still initializing — please wait a moment and try again', true);
     return;
   }
-  const scopes = ['User.Read', 'https://graph.microsoft.com/Sites.ReadWrite.All'];
+  const scopes = ['User.Read', 'https://avarglobal.sharepoint.com/.default'];
   setLoginStatus('Opening Microsoft login popup…');
   msalInstance.loginPopup({ scopes })
     .then(resp => {
@@ -663,13 +663,13 @@ function signIn() {
 
 function acquireToken() {
   showScreen('loading'); setLoadingText('acquiring token…');
-  const scopes = ['User.Read', 'https://graph.microsoft.com/Sites.ReadWrite.All'];
+  const scopes = ['User.Read', 'https://avarglobal.sharepoint.com/.default'];
   msalInstance.acquireTokenSilent({ scopes, account: msUser })
     .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
     .catch(() => {
       msalInstance.acquireTokenPopup({ scopes, account: msUser })
         .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
-        .catch(e => { console.error(e); showScreen('login'); toast('Session expired — please sign in again', true); });
+        .catch(e => { console.error(e); showScreen('login'); setLoginStatus('Session expired — please sign in again', true); });
     });
 }
 
@@ -1249,9 +1249,11 @@ function roleBadge(r){const cl={superadmin:'br-sa',manager:'br-manager',member:'
 CFG = {
   tenant: 'b3791c90-42f6-4b17-9c18-9300e725ae1f',
   client: 'f1ce86ef-6125-409c-950d-c90072c459b7',
-  site:   'https://avarglobal.sharepoint.com/sites/DigitalWorkspace',
+  site:   'https://avarglobal.sharepoint.com',
   redirectUri: 'https://lyric-logic.github.io/avar-tasks/avar-tasks.html'
 };
+// Always overwrite with latest hardcoded config
+localStorage.removeItem(CFG_KEY);
 localStorage.setItem(CFG_KEY, JSON.stringify(CFG));
 
 // Show login screen immediately while MSAL loads
@@ -1260,9 +1262,9 @@ setLoginStatus('Loading auth library…');
 
 // Load MSAL dynamically with multiple CDN fallbacks
 var msalCDNs = [
+  'https://lyric-logic.github.io/avar-tasks/msal-browser.min.js',
   'https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.7.0/lib/msal-browser.min.js',
-  'https://unpkg.com/@azure/msal-browser@3.7.0/lib/msal-browser.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library-browser/3.7.0/msal-browser.min.js'
+  'https://unpkg.com/@azure/msal-browser@3.7.0/lib/msal-browser.min.js'
 ];
 var msalCDNIdx = 0;
 
