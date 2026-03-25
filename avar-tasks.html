@@ -569,7 +569,9 @@ function saveConfig() {
   const client = document.getElementById('cfg-client').value.trim();
   const site   = document.getElementById('cfg-site').value.trim().replace(/\/$/, '');
   if (!tenant || !client || !site) { alert('Please fill in all three fields.'); return; }
-  CFG = { tenant, client, site };
+  // redirectUri is always the current page's GitHub URL
+  const redirectUri = 'https://lyric-logic.github.io/avar-tasks/avar-tasks.html';
+  CFG = { tenant, client, site, redirectUri };
   localStorage.setItem(CFG_KEY, JSON.stringify(CFG));
   initMSAL();
 }
@@ -611,33 +613,46 @@ function initMSAL() {
     auth: {
       clientId: CFG.client,
       authority: `https://login.microsoftonline.com/${CFG.tenant}`,
-      redirectUri: window.location.href.split('?')[0].split('#')[0]
+      redirectUri: CFG.redirectUri || 'https://lyric-logic.github.io/avar-tasks/avar-tasks.html',
+      navigateToLoginRequestUrl: false
     },
-    cache: { cacheLocation: 'sessionStorage' }
+    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
   };
   msalInstance = new msal.PublicClientApplication(msalConfig);
   msalInstance.initialize().then(() => {
-    msalInstance.handleRedirectPromise().then(resp => {
-      if (resp && resp.accessToken) { accessToken = resp.accessToken; msUser = resp.account; loadUserAndStart(); }
-      else {
-        const accounts = msalInstance.getAllAccounts();
-        if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
-      }
-    }).catch(console.error);
-  });
+    // Check if we already have an account cached
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) { msUser = accounts[0]; acquireToken(); }
+  }).catch(console.error);
 }
 
 function signIn() {
-  const scopes = ['User.Read', `${CFG.site.split('/sites')[0]}/.default`];
-  msalInstance.loginRedirect({ scopes });
+  const scopes = ['User.Read', 'https://graph.microsoft.com/Sites.ReadWrite.All'];
+  msalInstance.loginPopup({ scopes })
+    .then(resp => {
+      if (resp && resp.accessToken) { accessToken = resp.accessToken; msUser = resp.account; loadUserAndStart(); }
+      else if (resp && resp.account) { msUser = resp.account; acquireToken(); }
+    })
+    .catch(e => {
+      console.error(e);
+      if (e.errorCode === 'popup_window_error' || e.errorCode === 'empty_window_error') {
+        toast('Popups are blocked — please allow popups for this site and try again', true);
+      } else {
+        toast('Sign in failed: ' + (e.errorMessage || e.message || e.errorCode), true);
+      }
+    });
 }
 
 function acquireToken() {
   showScreen('loading'); setLoadingText('acquiring token…');
-  const scopes = ['User.Read', `${CFG.site.split('/sites')[0]}/.default`];
+  const scopes = ['User.Read', 'https://graph.microsoft.com/Sites.ReadWrite.All'];
   msalInstance.acquireTokenSilent({ scopes, account: msUser })
     .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
-    .catch(() => msalInstance.acquireTokenRedirect({ scopes }));
+    .catch(() => {
+      msalInstance.acquireTokenPopup({ scopes, account: msUser })
+        .then(r => { accessToken = r.accessToken; loadUserAndStart(); })
+        .catch(e => { console.error(e); showScreen('login'); toast('Session expired — please sign in again', true); });
+    });
 }
 
 function signOut() {
