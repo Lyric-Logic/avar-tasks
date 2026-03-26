@@ -1057,8 +1057,8 @@ function signOut(){if(demoMode){location.reload();return;}msalInstance.logoutRed
 // ══════════════════════════════════════════════════════
 function spH(){return{'Authorization':`Bearer ${accessToken}`,'Accept':'application/json;odata=nometadata','Content-Type':'application/json'};}
 async function spGet(p){const r=await fetch(`${CFG.site}/_api${p}`,{headers:spH()});if(!r.ok)throw new Error(`GET ${r.status} ${p}`);return r.json();}
-async function spPost(p,b){const r=await fetch(`${CFG.site}/_api${p}`,{method:'POST',headers:spH(),body:JSON.stringify(b)});if(!r.ok)throw new Error(`POST ${r.status}`);return r.json();}
-async function spPatch(p,b){const h={...spH(),'X-HTTP-Method':'MERGE','IF-MATCH':'*'};const r=await fetch(`${CFG.site}/_api${p}`,{method:'POST',headers:h,body:JSON.stringify(b)});if(!r.ok)throw new Error(`PATCH ${r.status}`);}
+async function spPost(p,b){const r=await fetch(`${CFG.site}/_api${p}`,{method:'POST',headers:spH(),body:JSON.stringify(b)});if(!r.ok){let msg=`POST ${r.status}`;try{const e=await r.json();msg+=': '+(e?.error?.message?.value||e?.error?.message||JSON.stringify(e));}catch(x){}throw new Error(msg);}return r.json();}
+async function spPatch(p,b){const h={...spH(),'X-HTTP-Method':'MERGE','IF-MATCH':'*'};const r=await fetch(`${CFG.site}/_api${p}`,{method:'POST',headers:h,body:JSON.stringify(b)});if(!r.ok){let msg=`PATCH ${r.status}`;try{const e=await r.json();msg+=': '+(e?.error?.message?.value||e?.error?.message||JSON.stringify(e));}catch(x){}throw new Error(msg);}}
 async function spDelete(p){const h={...spH(),'X-HTTP-Method':'DELETE','IF-MATCH':'*'};const r=await fetch(`${CFG.site}/_api${p}`,{method:'POST',headers:h});if(!r.ok)throw new Error(`DELETE ${r.status}`);}
 async function getList(name){const d=await spGet(`/web/lists/getbytitle('${name}')/items?$top=500`);return d.value;}
 
@@ -1083,6 +1083,7 @@ async function loadUserAndStart(){
 async function syncAll(){
   setSyncState('syncing');
   try{
+    // Check TF_Tasks columns exist (warn if optional ones missing)
     const [ru,rt,rupd,rst,rstupd,rp,rpm,rms,rd,rdm]=await Promise.all([
       getList('TF_Users'),getList('TF_Tasks'),getList('TF_Updates'),
       getList('TF_Subtasks').catch(()=>[]),getList('TF_SubtaskUpdates').catch(()=>[]),
@@ -1160,12 +1161,41 @@ async function createTask(){
   const btn=document.getElementById('create-btn');btn.disabled=true;btn.textContent='Creating…';
   try{
     const deptId=document.getElementById('t-dept').value||'';
-    const payload={Title:title,Description:document.getElementById('t-desc').value.trim(),AssigneeEmail:assignee.email,CreatedByEmail:u.email,Priority:document.getElementById('t-priority').value,Status:'open',Category:document.getElementById('t-cat').value.trim(),ProjectId:document.getElementById('t-project').value||'',DeptId:deptId};
-    if(deptId) payload.Hidden=isHiddenOn('t');
-    if(due)payload.DueDate=due+'T00:00:00Z';
-    await spPost(`/web/lists/getbytitle('TF_Tasks')/items`,payload);
-    await syncAll();closeModal('create-overlay');toast('Task created');
-  }catch(e){toast('Failed to create task',true);console.error(e);}
+    const projId=document.getElementById('t-project').value||'';
+    const cat=document.getElementById('t-cat').value.trim();
+    // Build payload - start with required fields only
+    const payload={
+      Title:title,
+      Description:document.getElementById('t-desc').value.trim(),
+      AssigneeEmail:assignee.email,
+      CreatedByEmail:u.email,
+      Priority:document.getElementById('t-priority').value,
+      Status:'open'
+    };
+    if(due) payload.DueDate=due+'T00:00:00Z';
+    if(cat) payload.Category=cat;
+    if(projId) payload.ProjectId=projId;
+    if(deptId){
+      payload.DeptId=deptId;
+      payload.Hidden=isHiddenOn('t');
+    }
+    let successMsg='Task created';
+    let created=false;
+    // Try full payload first
+    try{
+      await spPost(`/web/lists/getbytitle('TF_Tasks')/items`,payload);
+      created=true;
+    }catch(e1){
+      // If optional columns don't exist yet, retry with minimal payload
+      console.warn('Full payload failed, trying minimal:',e1.message);
+      const minimal={Title:payload.Title,Description:payload.Description,AssigneeEmail:payload.AssigneeEmail,CreatedByEmail:payload.CreatedByEmail,Priority:payload.Priority,Status:payload.Status};
+      if(payload.DueDate) minimal.DueDate=payload.DueDate;
+      await spPost(`/web/lists/getbytitle('TF_Tasks')/items`,minimal);
+      created=true;
+      successMsg='Task created (note: some columns like ProjectId/DeptId/Hidden are missing from TF_Tasks — please add them)';
+    }
+    if(created){ await syncAll();closeModal('create-overlay');toast(successMsg); }
+  }catch(e){toast('Failed: '+e.message,true);console.error('createTask error:',e);}
   finally{btn.disabled=false;btn.textContent='Create Task';}
 }
 
@@ -2398,31 +2428,30 @@ function populateMgrSel(selId,currentVal,excludeEmail){const sel=document.getEle
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 function initials(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 
-// Toggle switch — uses data-on attribute, no hidden input needed
 function toggleHidden(prefix){
   const toggle=document.getElementById(prefix+'-hidden-toggle');
   const knob=document.getElementById(prefix+'-hidden-knob');
-  if(!toggle)return;
-  const isOn=toggle.dataset.on==='1';
+  if(!toggle||!knob)return;
+  // Read current state — default off if not set
+  const isOn=toggle.getAttribute('data-on')==='1';
   const nowOn=!isOn;
-  toggle.dataset.on=nowOn?'1':'0';
+  toggle.setAttribute('data-on',nowOn?'1':'0');
   toggle.style.background=nowOn?'#3a5092':'var(--bg5)';
   knob.style.left=nowOn?'21px':'3px';
 }
 function isHiddenOn(prefix){
   const toggle=document.getElementById(prefix+'-hidden-toggle');
-  return toggle?toggle.dataset.on==='1':false;
+  return toggle?toggle.getAttribute('data-on')==='1':false;
 }
-function setHiddenToggle(prefix, on){
+function setHiddenToggle(prefix,on){
   const toggle=document.getElementById(prefix+'-hidden-toggle');
   const knob=document.getElementById(prefix+'-hidden-knob');
-  if(!toggle)return;
-  toggle.dataset.on=on?'1':'0';
+  if(!toggle||!knob)return;
+  toggle.setAttribute('data-on',on?'1':'0');
   toggle.style.background=on?'#3a5092':'var(--bg5)';
-  if(knob) knob.style.left=on?'21px':'3px';
+  knob.style.left=on?'21px':'3px';
 }
-// Legacy compat
-function updateToggle(cbId,trackId,knobId){}
+function updateToggle(){} // legacy compat stub
 function daysUntil(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(d+'T00:00:00')-t)/86400000);}
 function calcPct(t){if(!t.due)return 0;const s=t.createdAt,e=new Date(t.due+'T00:00:00').getTime(),n=Date.now();return e<=s?100:((n-s)/(e-s))*100;}
 function fmtDate(ts){return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
