@@ -1512,8 +1512,6 @@ function renderContent(){
 }
 
 function renderTaskList(){
-  document.getElementById('filterbar').style.display='flex';
-  document.getElementById('new-task-btn').textContent='New Task';
   const base=visibleTasks();
   const today=new Date();today.setHours(0,0,0,0);
   const search=document.getElementById('search-inp').value.toLowerCase();
@@ -1535,11 +1533,11 @@ function renderTaskList(){
     if(sort==='updated')return b.updatedAt-a.updatedAt;
     return b.createdAt-a.createdAt;
   });
-  document.getElementById('task-count-lbl')&&(document.getElementById('main-content').innerHTML=`
+  document.getElementById('main-content').innerHTML=`
     <div class="stats" id="stats-row-inner"></div>
     <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">${list.length} task${list.length!==1?'s':''}</div>
-    <div id="task-list-inner"></div>`);
-  // Re-render stats inline
+    <div id="task-list-inner"></div>`;
+  // Render stats
   const sEl=document.getElementById('stats-row-inner');
   if(sEl){
     const done=base.filter(t=>t.status==='done').length,overdue=base.filter(t=>t.status!=='done'&&t.due&&new Date(t.due+'T00:00:00')<today).length,inProg=base.filter(t=>t.status==='in-progress').length,rate=base.length?Math.round(done/base.length*100):0;
@@ -1574,7 +1572,6 @@ function renderTaskList(){
 }
 
 function renderProjectsList(archive=false){
-  document.getElementById('filterbar').style.display='none';
   const filtered=projects.filter(p=>archive?(p.status==='completed'||p.status==='cancelled'):p.status==='active'||p.status==='on-hold');
   document.getElementById('main-content').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -1602,7 +1599,6 @@ function renderProjectsList(archive=false){
 }
 
 function renderDeptsList(){
-  document.getElementById('filterbar').style.display='none';
   document.getElementById('main-content').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;">${departments.length} department${departments.length!==1?'s':''}</div>
@@ -1612,7 +1608,7 @@ function renderDeptsList(){
       const mems=deptMembers.filter(m=>m.deptId===d.id).length;
       const dTasks=tasks.filter(t=>t.deptId===d.id&&t.status!=='done').length;
       const mgr=users.find(u=>u.email===d.managerEmail);
-      return`<div class="dept-card" style="border-left-color:${d.color};" onclick="currentView='dept:${d.id}';document.getElementById('view-title').textContent='${d.name}';renderDeptDetail('${d.id}')">
+      return`<div class="dept-card" style="border-left-color:${d.color};" onclick="currentView='dept:${d.id}';document.getElementById('view-title').textContent='${d.name.replace(/'/g,"\\'")}';document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));renderDeptDetail('${d.id}')">
         <div class="dept-top"><div class="dept-icon" style="background:${d.color};">${d.name[0].toUpperCase()}</div><div class="dept-title">${d.name}</div>${d.desc?`<div style="font-size:11px;color:var(--text3);">${d.desc}</div>`:''}</div>
         <div class="dept-foot"><span>${mems} member${mems!==1?'s':''}</span><span>·</span><span>${dTasks} active task${dTasks!==1?'s':''}</span>${mgr?`<span>·</span><span>Mgr: ${mgr.name}</span>`:''}
         </div>
@@ -1621,7 +1617,6 @@ function renderDeptsList(){
 }
 
 function renderCalendarView(){
-  document.getElementById('filterbar').style.display='none';
   const today=new Date();today.setHours(0,0,0,0);
   const firstDay=new Date(calYear,calMonth,1);
   const lastDay=new Date(calYear,calMonth+1,0);
@@ -1694,7 +1689,7 @@ function updateSidebar(){
   document.getElementById('project-nav-items').innerHTML=activeProjects.slice(0,6).map(p=>`<div class="nav-item" data-view="project:${p.id}" onclick="setView(this);openProjectDetail('${p.id}')"><div class="nav-color-dot" style="background:${p.color};"></div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</span></div>`).join('');
   // Dept nav
   const myDepts=departments.filter(d=>deptMembers.some(m=>m.deptId===d.id&&m.memberEmail===u.email)||d.managerEmail===u.email||isSA());
-  document.getElementById('dept-nav-items').innerHTML=myDepts.slice(0,5).map(d=>`<div class="nav-item" data-view="dept:${d.id}" onclick="setView(this);renderDeptDetail('${d.id}')"><div class="nav-color-dot" style="background:${d.color};"></div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}</span></div>`).join('');
+  document.getElementById('dept-nav-items').innerHTML=myDepts.slice(0,5).map(d=>`<div class="nav-item" data-view="dept:${d.id}" onclick="setView(this)"><div class="nav-color-dot" style="background:${d.color};"></div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}</span></div>`).join('');
   // Perm note
   const note=document.getElementById('perm-note');
   if(u.role==='member'){note.textContent='You see tasks assigned to or created by you. You can also view and participate in projects and departments you belong to.';note.classList.add('show');}
@@ -1752,8 +1747,11 @@ function setView(el){
   const vl={all:'All Tasks',mine:'My Tasks',delegated:'Delegated',overdue:'Overdue',done:'Completed',calendar:'Calendar',projects:'Projects',archive:'Archive',departments:'Departments'};
   let title=vl[currentView]||currentView;
   if(currentView.startsWith('member:')){const u2=users.find(x=>x.id===currentView.slice(7));title=u2?u2.name+"'s Tasks":'Member';}
+  if(currentView.startsWith('dept:')){const d=departments.find(x=>x.id===currentView.slice(5));title=d?d.name:'Department';}
+  if(currentView.startsWith('project:')){const p=projects.find(x=>x.id===currentView.slice(8));title=p?p.name:'Project';}
   document.getElementById('view-title').textContent=title;
   document.getElementById('new-task-btn').style.display=['projects','archive','departments','calendar'].includes(currentView)||currentView.startsWith('project:')||currentView.startsWith('dept:')?'none':'flex';
+  document.getElementById('filterbar').style.display=['all','mine','delegated','overdue','done'].includes(currentView)||currentView.startsWith('member:')?'flex':'none';
   renderContent();
 }
 function setP(el){document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('on'));el.classList.add('on');pFilter=el.dataset.p;renderContent();}
