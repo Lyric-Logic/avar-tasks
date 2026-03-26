@@ -551,11 +551,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div style="font-size:12px;font-weight:500;">Hide from department members</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px;">Only you and the assignee will see this task</div>
         </div>
-        <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;">
-          <input type="checkbox" id="t-hidden" style="opacity:0;width:0;height:0;" onchange="updateToggle('t-hidden','t-hidden-track','t-hidden-knob')">
-          <span id="t-hidden-track" onclick="var cb=document.getElementById('t-hidden');cb.checked=!cb.checked;updateToggle('t-hidden','t-hidden-track','t-hidden-knob');" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
-          <span id="t-hidden-knob" style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
-        </label>
+        <div id="t-hidden-toggle" onclick="toggleHidden('t')" style="position:relative;width:40px;height:22px;border-radius:20px;background:var(--bg5);cursor:pointer;transition:background .2s;flex-shrink:0;">
+          <div id="t-hidden-knob" style="position:absolute;width:16px;height:16px;border-radius:50%;background:white;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -647,11 +645,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div style="font-size:12px;font-weight:500;">Hide from department members</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px;">Only you and the assignee will see this task</div>
         </div>
-        <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;">
-          <input type="checkbox" id="e-hidden" style="opacity:0;width:0;height:0;" onchange="updateToggle('e-hidden','e-hidden-track','e-hidden-knob')">
-          <span id="e-hidden-track" onclick="var cb=document.getElementById('e-hidden');cb.checked=!cb.checked;updateToggle('e-hidden','e-hidden-track','e-hidden-knob');" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
-          <span id="e-hidden-knob" style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
-        </label>
+        <div style="flex-shrink:0;">
+          <div id="e-hidden-toggle" onclick="toggleHidden('e')" style="position:relative;width:40px;height:22px;border-radius:20px;background:var(--bg5);cursor:pointer;transition:background .2s;flex-shrink:0;">
+            <div id="e-hidden-knob" style="position:absolute;width:16px;height:16px;border-radius:50%;background:white;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1135,9 +1133,8 @@ function openCreateModal(projId=''){
   ['t-title','t-desc','t-cat'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-due').value='';
   document.getElementById('t-priority').value='medium';
-  document.getElementById('t-hidden').checked=false;
   document.getElementById('t-hidden-row').style.display='none';
-  updateToggle('t-hidden','t-hidden-track','t-hidden-knob');
+  setHiddenToggle('t', false);
   // Populate project select
   const pSel=document.getElementById('t-project');
   pSel.innerHTML='<option value="">— none —</option>'+projects.filter(p=>p.status==='active'||p.status==='on-hold').map(p=>`<option value="${p.id}"${p.id===projId?' selected':''}>${p.name}</option>`).join('');
@@ -1147,10 +1144,7 @@ function openCreateModal(projId=''){
   dSel.onchange=()=>{
     const show=dSel.value!=='';
     document.getElementById('t-hidden-row').style.display=show?'block':'none';
-    if(!show){
-      document.getElementById('t-hidden').checked=false;
-      updateToggle('t-hidden','t-hidden-track','t-hidden-knob');
-    }
+    if(!show) setHiddenToggle('t',false);
   };
   document.getElementById('create-sub').textContent=u.role==='member'?'add to your tasks':'assign to your team';
   openModal('create-overlay');
@@ -1165,7 +1159,9 @@ async function createTask(){
   const due=document.getElementById('t-due').value;
   const btn=document.getElementById('create-btn');btn.disabled=true;btn.textContent='Creating…';
   try{
-    const payload={Title:title,Description:document.getElementById('t-desc').value.trim(),AssigneeEmail:assignee.email,CreatedByEmail:u.email,Priority:document.getElementById('t-priority').value,Status:'open',Category:document.getElementById('t-cat').value.trim(),ProjectId:document.getElementById('t-project').value||'',DeptId:document.getElementById('t-dept').value||'',Hidden:document.getElementById('t-hidden').checked};
+    const deptId=document.getElementById('t-dept').value||'';
+    const payload={Title:title,Description:document.getElementById('t-desc').value.trim(),AssigneeEmail:assignee.email,CreatedByEmail:u.email,Priority:document.getElementById('t-priority').value,Status:'open',Category:document.getElementById('t-cat').value.trim(),ProjectId:document.getElementById('t-project').value||'',DeptId:deptId};
+    if(deptId) payload.Hidden=isHiddenOn('t');
     if(due)payload.DueDate=due+'T00:00:00Z';
     await spPost(`/web/lists/getbytitle('TF_Tasks')/items`,payload);
     await syncAll();closeModal('create-overlay');toast('Task created');
@@ -1198,15 +1194,11 @@ function openEditModal(){
   const eDept=document.getElementById('e-dept');
   eDept.innerHTML='<option value="">— none —</option>'+departments.map(d=>`<option value="${d.id}"${d.id===t.deptId?' selected':''}>${d.name}</option>`).join('');
   // Hidden toggle
-  const eHidden=document.getElementById('e-hidden');
-  eHidden.checked=t.hidden||false;
-  const eTrack=document.getElementById('e-hidden-track');
-  eTrack.style.background=eHidden.checked?'#3a5092':'var(--bg5)';
-  updateToggle('e-hidden','e-hidden-track','e-hidden-knob');
+  setHiddenToggle('e', t.hidden||false);
   document.getElementById('e-hidden-row').style.display=t.deptId?'block':'none';
   eDept.onchange=()=>{
     document.getElementById('e-hidden-row').style.display=eDept.value?'block':'none';
-    if(!eDept.value)eHidden.checked=false;
+    if(!eDept.value) setHiddenToggle('e',false);
   };
   closeModal('detail-overlay');openModal('edit-overlay');
 }
@@ -1218,7 +1210,9 @@ async function saveTaskEdit(){
   const due=document.getElementById('e-due').value;
   const btn=document.getElementById('edit-btn');btn.disabled=true;btn.textContent='Saving…';
   try{
-    const payload={Title:title,Description:document.getElementById('e-desc').value.trim(),AssigneeEmail:assignee.email,Priority:document.getElementById('e-priority').value,Category:document.getElementById('e-cat').value.trim(),ProjectId:document.getElementById('e-project').value||'',DeptId:document.getElementById('e-dept').value||'',Hidden:document.getElementById('e-hidden').checked};
+    const eDeptId=document.getElementById('e-dept').value||'';
+    const payload={Title:title,Description:document.getElementById('e-desc').value.trim(),AssigneeEmail:assignee.email,Priority:document.getElementById('e-priority').value,Category:document.getElementById('e-cat').value.trim(),ProjectId:document.getElementById('e-project').value||'',DeptId:eDeptId};
+    if(eDeptId) payload.Hidden=isHiddenOn('e');
     if(due)payload.DueDate=due+'T00:00:00Z';
     await spPatch(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`,payload);
     await syncAll();closeModal('edit-overlay');currentTaskId=t.id;renderDetail();openModal('detail-overlay');toast('Task updated');
@@ -2404,14 +2398,31 @@ function populateMgrSel(selId,currentVal,excludeEmail){const sel=document.getEle
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 function initials(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 
-// Toggle switch helper — syncs track colour and knob position
-function updateToggle(cbId, trackId, knobId){
-  const checked=document.getElementById(cbId)?.checked;
-  const track=document.getElementById(trackId);
-  const knob=document.getElementById(knobId);
-  if(track) track.style.background=checked?'#3a5092':'var(--bg5)';
-  if(knob)  knob.style.left=checked?'19px':'3px';
+// Toggle switch — uses data-on attribute, no hidden input needed
+function toggleHidden(prefix){
+  const toggle=document.getElementById(prefix+'-hidden-toggle');
+  const knob=document.getElementById(prefix+'-hidden-knob');
+  if(!toggle)return;
+  const isOn=toggle.dataset.on==='1';
+  const nowOn=!isOn;
+  toggle.dataset.on=nowOn?'1':'0';
+  toggle.style.background=nowOn?'#3a5092':'var(--bg5)';
+  knob.style.left=nowOn?'21px':'3px';
 }
+function isHiddenOn(prefix){
+  const toggle=document.getElementById(prefix+'-hidden-toggle');
+  return toggle?toggle.dataset.on==='1':false;
+}
+function setHiddenToggle(prefix, on){
+  const toggle=document.getElementById(prefix+'-hidden-toggle');
+  const knob=document.getElementById(prefix+'-hidden-knob');
+  if(!toggle)return;
+  toggle.dataset.on=on?'1':'0';
+  toggle.style.background=on?'#3a5092':'var(--bg5)';
+  if(knob) knob.style.left=on?'21px':'3px';
+}
+// Legacy compat
+function updateToggle(cbId,trackId,knobId){}
 function daysUntil(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(d+'T00:00:00')-t)/86400000);}
 function calcPct(t){if(!t.due)return 0;const s=t.createdAt,e=new Date(t.due+'T00:00:00').getTime(),n=Date.now();return e<=s?100:((n-s)/(e-s))*100;}
 function fmtDate(ts){return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
