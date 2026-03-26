@@ -552,8 +552,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div style="font-size:11px;color:var(--text3);margin-top:2px;">Only you and the assignee will see this task</div>
         </div>
         <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;">
-          <input type="checkbox" id="t-hidden" style="opacity:0;width:0;height:0;">
-          <span onclick="document.getElementById('t-hidden').checked=!document.getElementById('t-hidden').checked;this.style.background=document.getElementById('t-hidden').checked?'#3a5092':'var(--bg5)';" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
+          <input type="checkbox" id="t-hidden" style="opacity:0;width:0;height:0;" onchange="updateToggle('t-hidden','t-hidden-track','t-hidden-knob')">
+          <span id="t-hidden-track" onclick="var cb=document.getElementById('t-hidden');cb.checked=!cb.checked;updateToggle('t-hidden','t-hidden-track','t-hidden-knob');" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
           <span id="t-hidden-knob" style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
         </label>
       </div>
@@ -648,9 +648,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div style="font-size:11px;color:var(--text3);margin-top:2px;">Only you and the assignee will see this task</div>
         </div>
         <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;">
-          <input type="checkbox" id="e-hidden" style="opacity:0;width:0;height:0;">
-          <span id="e-hidden-track" onclick="document.getElementById('e-hidden').checked=!document.getElementById('e-hidden').checked;this.style.background=document.getElementById('e-hidden').checked?'#3a5092':'var(--bg5)';" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
-          <span style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
+          <input type="checkbox" id="e-hidden" style="opacity:0;width:0;height:0;" onchange="updateToggle('e-hidden','e-hidden-track','e-hidden-knob')">
+          <span id="e-hidden-track" onclick="var cb=document.getElementById('e-hidden');cb.checked=!cb.checked;updateToggle('e-hidden','e-hidden-track','e-hidden-knob');" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
+          <span id="e-hidden-knob" style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
         </label>
       </div>
     </div>
@@ -672,7 +672,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div class="fr" style="margin-top:12px;"><label class="fl">Color</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;" id="p-color-picker">
-        ${['#3a5092','#d94f4f','#c47a00','#1a8a5a','#5a4fa0','#0e7490','#be185d','#374151'].map(c=>`<div onclick="selectProjColor('${c}')" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="${c}"></div>`).join('')}
+        <div onclick="selectProjColor('#3a5092')" style="width:24px;height:24px;border-radius:50%;background:#3a5092;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#3a5092"></div>
+        <div onclick="selectProjColor('#d94f4f')" style="width:24px;height:24px;border-radius:50%;background:#d94f4f;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#d94f4f"></div>
+        <div onclick="selectProjColor('#c47a00')" style="width:24px;height:24px;border-radius:50%;background:#c47a00;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#c47a00"></div>
+        <div onclick="selectProjColor('#1a8a5a')" style="width:24px;height:24px;border-radius:50%;background:#1a8a5a;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#1a8a5a"></div>
+        <div onclick="selectProjColor('#5a4fa0')" style="width:24px;height:24px;border-radius:50%;background:#5a4fa0;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#5a4fa0"></div>
+        <div onclick="selectProjColor('#0e7490')" style="width:24px;height:24px;border-radius:50%;background:#0e7490;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#0e7490"></div>
+        <div onclick="selectProjColor('#be185d')" style="width:24px;height:24px;border-radius:50%;background:#be185d;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#be185d"></div>
+        <div onclick="selectProjColor('#374151')" style="width:24px;height:24px;border-radius:50%;background:#374151;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#374151"></div>
       </div>
     </div>
   </div>
@@ -754,7 +761,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="fr"><label class="fl">Manager</label><select class="fs" id="d-manager"><option value="">— none —</option></select></div>
     <div class="fr"><label class="fl">Color</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;" id="d-color-picker">
-        ${['#3a5092','#d94f4f','#c47a00','#1a8a5a','#5a4fa0','#0e7490','#be185d','#374151'].map(c=>`<div onclick="selectDeptColor('${c}')" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="${c}"></div>`).join('')}
+        <div onclick="selectDeptColor('#3a5092')" style="width:24px;height:24px;border-radius:50%;background:#3a5092;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#3a5092"></div>
+        <div onclick="selectDeptColor('#d94f4f')" style="width:24px;height:24px;border-radius:50%;background:#d94f4f;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#d94f4f"></div>
+        <div onclick="selectDeptColor('#c47a00')" style="width:24px;height:24px;border-radius:50%;background:#c47a00;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#c47a00"></div>
+        <div onclick="selectDeptColor('#1a8a5a')" style="width:24px;height:24px;border-radius:50%;background:#1a8a5a;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#1a8a5a"></div>
+        <div onclick="selectDeptColor('#5a4fa0')" style="width:24px;height:24px;border-radius:50%;background:#5a4fa0;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#5a4fa0"></div>
+        <div onclick="selectDeptColor('#0e7490')" style="width:24px;height:24px;border-radius:50%;background:#0e7490;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#0e7490"></div>
+        <div onclick="selectDeptColor('#be185d')" style="width:24px;height:24px;border-radius:50%;background:#be185d;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#be185d"></div>
+        <div onclick="selectDeptColor('#374151')" style="width:24px;height:24px;border-radius:50%;background:#374151;cursor:pointer;border:2px solid transparent;transition:border-color .15s;" data-color="#374151"></div>
       </div>
     </div>
   </div>
@@ -1123,6 +1137,7 @@ function openCreateModal(projId=''){
   document.getElementById('t-priority').value='medium';
   document.getElementById('t-hidden').checked=false;
   document.getElementById('t-hidden-row').style.display='none';
+  updateToggle('t-hidden','t-hidden-track','t-hidden-knob');
   // Populate project select
   const pSel=document.getElementById('t-project');
   pSel.innerHTML='<option value="">— none —</option>'+projects.filter(p=>p.status==='active'||p.status==='on-hold').map(p=>`<option value="${p.id}"${p.id===projId?' selected':''}>${p.name}</option>`).join('');
@@ -1132,12 +1147,23 @@ function openCreateModal(projId=''){
   dSel.onchange=()=>{
     const show=dSel.value!=='';
     document.getElementById('t-hidden-row').style.display=show?'block':'none';
-    if(!show)document.getElementById('t-hidden').checked=false;
+    if(!show){
+      document.getElementById('t-hidden').checked=false;
+      updateToggle('t-hidden','t-hidden-track','t-hidden-knob');
+    }
   };
   document.getElementById('create-sub').textContent=u.role==='member'?'add to your tasks':'assign to your team';
   openModal('create-overlay');
 }
-async function createTask(){
+// Open create modal with a dept pre-selected
+function openCreateModalForDept(deptId){
+  openCreateModal();
+  const dSel=document.getElementById('t-dept');
+  if(dSel){
+    dSel.value=deptId;
+    dSel.dispatchEvent(new Event('change'));
+  }
+}
   const u=me();if(!u)return;
   const title=document.getElementById('t-title').value.trim();
   const assigneeId=document.getElementById('t-assignee').value;
@@ -1173,6 +1199,7 @@ function openEditModal(){
   eHidden.checked=t.hidden||false;
   const eTrack=document.getElementById('e-hidden-track');
   eTrack.style.background=eHidden.checked?'#3a5092':'var(--bg5)';
+  updateToggle('e-hidden','e-hidden-track','e-hidden-knob');
   document.getElementById('e-hidden-row').style.display=t.deptId?'block':'none';
   eDept.onchange=()=>{
     document.getElementById('e-hidden-row').style.display=eDept.value?'block':'none';
@@ -1771,37 +1798,84 @@ async function removeDeptMember(id){
   try{await spDelete(`/web/lists/getbytitle('TF_DeptMembers')/items(${m.spId})`);await syncAll();renderDeptDetail(m.deptId);toast('Member removed');}
   catch(e){toast('Failed',true);}
 }
+let currentDeptTab='tasks'; // overview | tasks | members
+let deptTaskFilter='active'; // active | done | all
+
 function renderDeptDetail(deptId){
   const d=departments.find(x=>x.id===deptId);if(!d)return;
   const mems=deptMembers.filter(m=>m.deptId===deptId);
-  const deptTasks=tasks.filter(t=>t.deptId===deptId&&t.status!=='done');
+  const allDeptTasks=visibleTasks().filter(t=>t.deptId===deptId);
+  const activeTasks=allDeptTasks.filter(t=>t.status!=='done');
+  const doneTasks=allDeptTasks.filter(t=>t.status==='done');
   const canManage=canManageDept(deptId);
+  const today=new Date();today.setHours(0,0,0,0);
+
+  const tabs=['tasks','members'];
+  const tabLabels={tasks:`Tasks (${activeTasks.length})`,members:`Members (${mems.length})`};
+  const tabsHTML=`<div style="display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px;">${tabs.map(t=>`<div class="proj-tab${currentDeptTab===t?' active':''}" onclick="currentDeptTab='${t}';renderDeptDetail('${deptId}');" style="padding:10px 14px;font-size:12px;font-weight:500;cursor:pointer;color:${currentDeptTab===t?'var(--accent)':'var(--text3)'};border-bottom:2px solid ${currentDeptTab===t?'var(--accent)':'transparent'};margin-bottom:-1px;transition:all .15s;">${tabLabels[t]}</div>`).join('')}</div>`;
+
+  let tabContent='';
+  if(currentDeptTab==='tasks'){
+    const canAdd=canManage||mems.some(m=>m.memberEmail===me()?.email);
+    tabContent=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;gap:6px;">
+          <button onclick="deptTaskFilter='active';renderDeptDetail('${deptId}')" class="fpill${deptTaskFilter==='active'?' on':''}">Active (${activeTasks.length})</button>
+          <button onclick="deptTaskFilter='done';renderDeptDetail('${deptId}')" class="fpill${deptTaskFilter==='done'?' on':''}">Completed (${doneTasks.length})</button>
+          <button onclick="deptTaskFilter='all';renderDeptDetail('${deptId}')" class="fpill${deptTaskFilter==='all'?' on':''}">All</button>
+        </div>
+        ${canAdd?`<button class="btn btn-primary btn-sm" onclick="openCreateModalForDept('${deptId}')">+ New Task</button>`:''}
+      </div>
+      ${(()=>{
+        const filter=deptTaskFilter;
+        const list=filter==='active'?activeTasks:filter==='done'?doneTasks:allDeptTasks;
+        if(!list.length)return`<div class="empty"><p style="font-size:12px;">No ${filter==='done'?'completed':filter==='all'?'':' active'} tasks in this department.</p></div>`;
+        return list.map(t=>{
+          const a=users.find(x=>x.id===t.assigneeId);
+          const due=t.due?new Date(t.due+'T00:00:00'):null;
+          const overdue=t.status!=='done'&&due&&due<today;
+          const sC={open:'bs-open','in-progress':'bs-in-progress',done:'bs-done',blocked:'bs-blocked'}[t.status]||'bs-open';
+          const sL={open:'Open','in-progress':'In Progress',done:'Done',blocked:'Blocked'}[t.status]||t.status;
+          const dl=daysUntil(t.due);
+          const dueLabel=!t.due?'<span style="color:var(--text3);">No deadline</span>':overdue?`<span style="color:var(--red);">${Math.abs(dl)}d overdue</span>`:dl===0?'today':fmtFullDate(t.due);
+          return`<div class="task-card${overdue?' tc-overdue':t.status==='done'?' tc-done':' tc-ok'}" onclick="openDetail('${t.id}')">
+            <div class="tc-top"><div class="tc-dot dp-${t.priority}"></div><div class="tc-body"><div class="tc-title">${t.title}${t.hidden?` <span style="font-size:10px;color:var(--amber);">🔒</span>`:''}
+            </div>${t.desc?`<div class="tc-desc">${t.desc}</div>`:''}</div><span class="badge ${sC}">${sL}</span></div>
+            <div class="tc-foot">${a?`<div class="chip"><div class="mini-av" style="${avColor(a.name)}">${initials(a.name)}</div>${a.name}</div>`:''}<div class="tc-meta"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="5"/><path d="M6 3.5v3l1.5 1.5"/></svg>${dueLabel}</div>${t.updates.length?`<div class="upd-ct" style="margin-left:auto;"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 2h8v7H2z"/></svg>${t.updates.length}</div>`:''}</div>
+          </div>`;
+        }).join('');
+      })()}`;
+  }else if(currentDeptTab==='members'){
+    tabContent=`
+      ${canManage?`<div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+        <select id="dept-add-member-sel" class="fs" style="flex:1;">${users.filter(u=>!mems.some(m=>m.memberEmail===u.email)).map(u=>`<option value="${u.email}">${u.name} (${u.email})</option>`).join('')}</select>
+        <button class="btn btn-primary btn-sm" onclick="addDeptMember('${d.id}',document.getElementById('dept-add-member-sel').value)">+ Add</button>
+      </div>`:''}
+      ${mems.map(m=>{const u=users.find(x=>x.email===m.memberEmail);const openT=allDeptTasks.filter(t=>t.assigneeId===u?.id&&t.status!=='done').length;return`<div class="member-row"><div class="member-av" style="${avColor(u?.name||m.memberEmail)}">${initials(u?.name||m.memberEmail)}</div><div style="flex:1;"><div style="font-size:13px;font-weight:500;">${u?u.name:m.memberEmail}</div><div style="font-size:10px;color:var(--text3);">${m.memberEmail}${openT?` · ${openT} active task${openT!==1?'s':''} in this dept`:''}</div></div>${canManage?`<button class="btn btn-red btn-sm" onclick="removeDeptMember('${m.id}')">Remove</button>`:''}</div>`;}).join('')||'<div style="font-size:12px;color:var(--text3);">No members yet.</div>'}`;
+  }
+
   document.getElementById('main-content').innerHTML=`
-    <div style="margin-bottom:16px;">
-      <button class="btn btn-ghost btn-sm" onclick="setView(document.querySelector('.nav-item[data-view=departments]'))">← Back to Departments</button>
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-ghost btn-sm" onclick="setView(document.querySelector('.nav-item[data-view=departments]')||{dataset:{view:'departments'}})">← Departments</button>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <div style="width:44px;height:44px;border-radius:12px;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;">${d.name[0]}</div>
-      <div style="flex:1;"><div style="font-size:18px;font-weight:600;">${d.name}</div>${d.desc?`<div style="font-size:12px;color:var(--text3);">${d.desc}</div>`:''}</div>
-      ${isSA()?`<button class="btn btn-ghost btn-sm" onclick="openEditDeptModal('${d.id}')">Edit</button>`:''}
+      <div style="flex:1;">
+        <div style="font-size:18px;font-weight:600;">${d.name}</div>
+        ${d.desc?`<div style="font-size:12px;color:var(--text3);">${d.desc}</div>`:''}
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Manager: ${users.find(u=>u.email===d.managerEmail)?.name||'—'}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        ${isSA()?`<button class="btn btn-ghost btn-sm" onclick="openEditDeptModal('${d.id}')">Edit</button>`:''}
+      </div>
     </div>
     <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
       <div class="stat"><div class="stat-lbl">Members</div><div class="stat-val vc">${mems.length}</div></div>
-      <div class="stat"><div class="stat-lbl">Active Tasks</div><div class="stat-val va">${deptTasks.length}</div></div>
-      <div class="stat"><div class="stat-lbl">Manager</div><div class="stat-val" style="font-size:13px;font-weight:500;">${users.find(u=>u.email===d.managerEmail)?.name||'—'}</div></div>
+      <div class="stat"><div class="stat-lbl">Active Tasks</div><div class="stat-val va">${activeTasks.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Completed</div><div class="stat-val vg">${doneTasks.length}</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-      <div>
-        <div class="section-hd">Members
-          ${canManage?`<select id="dept-add-member-sel" class="fsel" style="margin-right:4px;">${users.filter(u=>!mems.some(m=>m.memberEmail===u.email)).map(u=>`<option value="${u.email}">${u.name}</option>`).join('')}</select><button class="btn btn-primary btn-sm" onclick="addDeptMember('${d.id}',document.getElementById('dept-add-member-sel').value)">Add</button>`:''}
-        </div>
-        ${mems.map(m=>{const u=users.find(x=>x.email===m.memberEmail);return`<div class="member-row"><div class="member-av" style="${avColor(u?.name||m.memberEmail)}">${initials(u?.name||m.memberEmail)}</div><div style="flex:1;"><div style="font-size:12px;font-weight:500;">${u?u.name:m.memberEmail}</div><div style="font-size:10px;color:var(--text3);">${m.memberEmail}</div></div>${canManage?`<button class="btn btn-red btn-sm" onclick="removeDeptMember('${m.id}')">Remove</button>`:''}</div>`;}).join('')||'<div style="font-size:12px;color:var(--text3);">No members yet.</div>'}
-      </div>
-      <div>
-        <div class="section-hd">Active Tasks</div>
-        ${deptTasks.slice(0,5).map(t=>{const a=users.find(x=>x.id===t.assigneeId);return`<div class="task-card tc-ok" style="padding:10px 12px;" onclick="openDetail('${t.id}')"><div class="tc-title">${t.title}</div><div class="tc-foot" style="margin-top:6px;">${a?`<div class="chip"><div class="mini-av" style="${avColor(a.name)}">${initials(a.name)}</div>${a.name}</div>`:''}${t.due?`<div class="tc-meta"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="5"/><path d="M6 3.5v3l1.5 1.5"/></svg>${fmtFullDate(t.due)}</div>`:''}</div></div>`;}).join('')||'<div style="font-size:12px;color:var(--text3);">No active tasks.</div>'}
-      </div>
-    </div>`;
+    ${tabsHTML}
+    <div>${tabContent}</div>`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -2326,6 +2400,15 @@ function populateMgrSel(selId,currentVal,excludeEmail){const sel=document.getEle
 // ══════════════════════════════════════════════════════
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 function initials(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+
+// Toggle switch helper — syncs track colour and knob position
+function updateToggle(cbId, trackId, knobId){
+  const checked=document.getElementById(cbId)?.checked;
+  const track=document.getElementById(trackId);
+  const knob=document.getElementById(knobId);
+  if(track) track.style.background=checked?'#3a5092':'var(--bg5)';
+  if(knob)  knob.style.left=checked?'19px':'3px';
+}
 function daysUntil(d){if(!d)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(d+'T00:00:00')-t)/86400000);}
 function calcPct(t){if(!t.due)return 0;const s=t.createdAt,e=new Date(t.due+'T00:00:00').getTime(),n=Date.now();return e<=s?100:((n-s)/(e-s))*100;}
 function fmtDate(ts){return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
