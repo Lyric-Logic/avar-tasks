@@ -301,6 +301,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .cal-task-pill.cp-medium{background:var(--amber-bg);color:var(--amber);}
 .cal-task-pill.cp-low{background:var(--green-bg);color:var(--green);}
 .cal-task-pill.cp-milestone{background:var(--purple-bg);color:var(--purple);}
+.cal-task-pill.cp-overdue{background:var(--red-bg);color:var(--red);opacity:.6;}
 .cal-more{font-size:10px;color:var(--text3);cursor:pointer;padding:1px 3px;}
 
 /* ORG */
@@ -442,7 +443,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
 
       <div class="nav-sect" id="team-nav-sect" style="display:none;">
-        <div class="nav-sect-label">My Team</div>
+        <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
+          My Team
+          <span onclick="openAddToTeamModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;" title="Add team member">+</span>
+        </div>
         <div id="team-nav-items"></div>
       </div>
 
@@ -541,6 +545,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="fr" style="margin-bottom:0;"><label class="fl">Project <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label><select class="fs" id="t-project"><option value="">— none —</option></select></div>
       <div class="fr" style="margin-bottom:0;"><label class="fl">Department <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label><select class="fs" id="t-dept"><option value="">— none —</option></select></div>
     </div>
+    <div id="t-hidden-row" style="margin-top:12px;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);">
+        <div>
+          <div style="font-size:12px;font-weight:500;">Hide from department members</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Only you and the assignee will see this task</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;">
+          <input type="checkbox" id="t-hidden" style="opacity:0;width:0;height:0;">
+          <span onclick="document.getElementById('t-hidden').checked=!document.getElementById('t-hidden').checked;this.style.background=document.getElementById('t-hidden').checked?'#3a5092':'var(--bg5)';" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
+          <span id="t-hidden-knob" style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
+        </label>
+      </div>
+    </div>
   </div>
   <div class="mf"><button class="btn btn-ghost" onclick="closeModal('create-overlay')">Cancel</button><button class="btn btn-primary" id="create-btn" onclick="createTask()">Create Task</button></div>
 </div>
@@ -623,6 +640,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="fr2" style="margin-top:12px;">
       <div class="fr" style="margin-bottom:0;"><label class="fl">Project</label><select class="fs" id="e-project"><option value="">— none —</option></select></div>
       <div class="fr" style="margin-bottom:0;"><label class="fl">Department</label><select class="fs" id="e-dept"><option value="">— none —</option></select></div>
+    </div>
+    <div id="e-hidden-row" style="margin-top:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);">
+        <div>
+          <div style="font-size:12px;font-weight:500;">Hide from department members</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Only you and the assignee will see this task</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;">
+          <input type="checkbox" id="e-hidden" style="opacity:0;width:0;height:0;">
+          <span id="e-hidden-track" onclick="document.getElementById('e-hidden').checked=!document.getElementById('e-hidden').checked;this.style.background=document.getElementById('e-hidden').checked?'#3a5092':'var(--bg5)';" style="position:absolute;cursor:pointer;inset:0;background:var(--bg5);border-radius:20px;transition:.2s;"></span>
+          <span style="position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;pointer-events:none;"></span>
+        </label>
+      </div>
     </div>
   </div>
   <div class="mf"><button class="btn btn-ghost" onclick="closeModal('edit-overlay')">Cancel</button><button class="btn btn-primary" id="edit-btn" onclick="saveTaskEdit()">Save Changes</button></div>
@@ -772,7 +802,58 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </div>
 </div>
 
-<div class="toast" id="toast">
+<!-- ADD TO TEAM MODAL (Managers) -->
+<div class="overlay" id="addteam-overlay">
+<div class="modal" style="max-width:460px;">
+  <div class="mh">
+    <div>
+      <div class="mh-title">Add to My Team</div>
+      <div class="mh-sub">updates reporting line in org chart</div>
+    </div>
+    <button class="close-x" onclick="closeModal('addteam-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+  </div>
+  <div class="mb">
+    <!-- Toggle: existing vs new -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;background:var(--bg4);border-radius:var(--r);padding:3px;">
+      <button id="att-tab-existing" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;" onclick="setAddTeamTab('existing')">Existing User</button>
+      <button id="att-tab-new" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;" onclick="setAddTeamTab('new')">New Person</button>
+    </div>
+
+    <!-- Existing user panel -->
+    <div id="att-existing-panel">
+      <div class="fr">
+        <label class="fl">Search & Select User</label>
+        <input class="fi" id="att-search" placeholder="Type name or email…" oninput="filterAddTeamUsers()">
+      </div>
+      <div id="att-user-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--bg3);"></div>
+      <div id="att-selected-user" style="display:none;margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid var(--border2);border-radius:var(--r);">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Selected:</div>
+        <div id="att-selected-name" style="font-size:13px;font-weight:500;"></div>
+        <div id="att-selected-email" style="font-size:11px;color:var(--text3);font-family:var(--mono);"></div>
+      </div>
+    </div>
+
+    <!-- New person panel -->
+    <div id="att-new-panel" style="display:none;">
+      <div class="fr"><label class="fl">Full Name *</label><input class="fi" id="att-new-name" placeholder="Full name"></div>
+      <div class="fr"><label class="fl">Email *</label><input class="fi" id="att-new-email" placeholder="user@avarglobal.com"></div>
+      <div class="fr"><label class="fl">Role</label>
+        <select class="fs" id="att-new-role">
+          <option value="member">Team Member</option>
+          <option value="manager">Manager</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;padding:8px 10px;background:var(--bg3);border-radius:var(--r);line-height:1.6;">
+        This person will be added to TF_Users and will report to you. They can sign in with their Microsoft account once added.
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn btn-ghost" onclick="closeModal('addteam-overlay')">Cancel</button>
+    <button class="btn btn-primary" id="att-save-btn" onclick="saveAddToTeam()">Add to My Team</button>
+  </div>
+</div>
+</div>
   <div class="toast-ico ok" id="toast-ico"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg></div>
   <span id="toast-msg">Done</span>
 </div>
@@ -850,9 +931,40 @@ function assignableUsers(){
 function visibleTasks(){
   const u=me();if(!u)return[];
   const er=effectiveRole();
+
+  // Helper: can user see a dept task?
+  function canSeeDeptTask(t){
+    if(!t.deptId)return true; // no dept = no restriction
+    if(t.hidden&&t.createdById!==u.id&&t.assigneeId!==u.id)return false; // hidden by creator
+    const d=departments.find(x=>x.id===t.deptId);
+    if(!d)return true;
+    // Dept manager always sees
+    if(d.managerEmail===u.email)return true;
+    // Dept member sees
+    return deptMembers.some(m=>m.deptId===t.deptId&&m.memberEmail===u.email);
+  }
+
   if(er==='superadmin')return tasks;
-  if(er==='manager'){const sub=getSubtree(u.id,true);return tasks.filter(t=>sub.includes(t.assigneeId)||t.createdById===u.id||t.assigneeId===u.id);}
-  return tasks.filter(t=>t.assigneeId===u.id||t.createdById===u.id);
+  if(er==='manager'){
+    const sub=getSubtree(u.id,true);
+    return tasks.filter(t=>{
+      // Own tasks or assigned to subtree
+      if(sub.includes(t.assigneeId)||t.createdById===u.id||t.assigneeId===u.id){
+        // Still check hidden dept restriction unless creator or assignee
+        if(t.hidden&&t.createdById!==u.id&&t.assigneeId!==u.id)return false;
+        return true;
+      }
+      // Dept tasks where manager belongs to the dept
+      if(t.deptId&&canSeeDeptTask(t))return true;
+      return false;
+    });
+  }
+  // Member
+  return tasks.filter(t=>{
+    if(t.assigneeId===u.id||t.createdById===u.id)return true;
+    if(t.deptId&&canSeeDeptTask(t))return true;
+    return false;
+  });
 }
 function canEditTask(task){
   const u=me();if(!u)return false;
@@ -988,7 +1100,7 @@ function mapUser(r){return{id:String(r.ID||r.id),spId:r.ID,name:r.Title,email:(r
 function mapTask(r){
   const aId=String(users.find(u=>u.email===(r.AssigneeEmail||'').toLowerCase())?.id||'');
   const cId=String(users.find(u=>u.email===(r.CreatedByEmail||'').toLowerCase())?.id||'');
-  return{id:String(r.ID),spId:r.ID,title:r.Title,desc:r.Description||'',assigneeId:aId,assigneeEmail:(r.AssigneeEmail||'').toLowerCase(),createdById:cId,createdByEmail:(r.CreatedByEmail||'').toLowerCase(),priority:r.Priority||'medium',status:r.Status||'open',due:r.DueDate?r.DueDate.split('T')[0]:'',category:r.Category||'',projectId:r.ProjectId||'',deptId:r.DeptId||'',createdAt:new Date(r.Created||Date.now()).getTime(),updatedAt:new Date(r.Modified||Date.now()).getTime(),updates:[],subtasks:[]};
+  return{id:String(r.ID),spId:r.ID,title:r.Title,desc:r.Description||'',assigneeId:aId,assigneeEmail:(r.AssigneeEmail||'').toLowerCase(),createdById:cId,createdByEmail:(r.CreatedByEmail||'').toLowerCase(),priority:r.Priority||'medium',status:r.Status||'open',due:r.DueDate?r.DueDate.split('T')[0]:'',category:r.Category||'',projectId:r.ProjectId||'',deptId:r.DeptId||'',hidden:r.Hidden===true||r.Hidden==='true'||r.Hidden==='Yes',createdAt:new Date(r.Created||Date.now()).getTime(),updatedAt:new Date(r.Modified||Date.now()).getTime(),updates:[],subtasks:[]};
 }
 function mapUpdate(r){return{id:String(r.ID),taskId:String(r.TaskId),authorId:String(users.find(u=>u.email===(r.AuthorEmail||'').toLowerCase())?.id||''),authorEmail:(r.AuthorEmail||'').toLowerCase(),text:r.Title||'',updateType:r.UpdateType||'note',createdAt:new Date(r.Created||Date.now()).getTime()};}
 function mapSubtask(r){return{id:String(r.ID),spId:r.ID,taskId:String(r.TaskId||''),title:r.Title||'',status:r.Status||'open',createdAt:new Date(r.Created||Date.now()).getTime(),updates:[]};}
@@ -1009,11 +1121,19 @@ function openCreateModal(projId=''){
   ['t-title','t-desc','t-cat'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-due').value='';
   document.getElementById('t-priority').value='medium';
+  document.getElementById('t-hidden').checked=false;
+  document.getElementById('t-hidden-row').style.display='none';
   // Populate project select
   const pSel=document.getElementById('t-project');
   pSel.innerHTML='<option value="">— none —</option>'+projects.filter(p=>p.status==='active'||p.status==='on-hold').map(p=>`<option value="${p.id}"${p.id===projId?' selected':''}>${p.name}</option>`).join('');
-  // Populate dept select
-  document.getElementById('t-dept').innerHTML='<option value="">— none —</option>'+departments.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  // Populate dept select — show hidden toggle when dept is selected
+  const dSel=document.getElementById('t-dept');
+  dSel.innerHTML='<option value="">— none —</option>'+departments.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  dSel.onchange=()=>{
+    const show=dSel.value!=='';
+    document.getElementById('t-hidden-row').style.display=show?'block':'none';
+    if(!show)document.getElementById('t-hidden').checked=false;
+  };
   document.getElementById('create-sub').textContent=u.role==='member'?'add to your tasks':'assign to your team';
   openModal('create-overlay');
 }
@@ -1026,7 +1146,7 @@ async function createTask(){
   const due=document.getElementById('t-due').value;
   const btn=document.getElementById('create-btn');btn.disabled=true;btn.textContent='Creating…';
   try{
-    const payload={Title:title,Description:document.getElementById('t-desc').value.trim(),AssigneeEmail:assignee.email,CreatedByEmail:u.email,Priority:document.getElementById('t-priority').value,Status:'open',Category:document.getElementById('t-cat').value.trim(),ProjectId:document.getElementById('t-project').value||'',DeptId:document.getElementById('t-dept').value||''};
+    const payload={Title:title,Description:document.getElementById('t-desc').value.trim(),AssigneeEmail:assignee.email,CreatedByEmail:u.email,Priority:document.getElementById('t-priority').value,Status:'open',Category:document.getElementById('t-cat').value.trim(),ProjectId:document.getElementById('t-project').value||'',DeptId:document.getElementById('t-dept').value||'',Hidden:document.getElementById('t-hidden').checked};
     if(due)payload.DueDate=due+'T00:00:00Z';
     await spPost(`/web/lists/getbytitle('TF_Tasks')/items`,payload);
     await syncAll();closeModal('create-overlay');toast('Task created');
@@ -1046,7 +1166,18 @@ function openEditModal(){
   document.getElementById('e-priority').value=t.priority;
   document.getElementById('e-assignee').innerHTML=assignableUsers().map(a=>`<option value="${a.id}"${a.id===t.assigneeId?' selected':''}>${a.name}</option>`).join('');
   document.getElementById('e-project').innerHTML='<option value="">— none —</option>'+projects.map(p=>`<option value="${p.id}"${p.id===t.projectId?' selected':''}>${p.name}</option>`).join('');
-  document.getElementById('e-dept').innerHTML='<option value="">— none —</option>'+departments.map(d=>`<option value="${d.id}"${d.id===t.deptId?' selected':''}>${d.name}</option>`).join('');
+  const eDept=document.getElementById('e-dept');
+  eDept.innerHTML='<option value="">— none —</option>'+departments.map(d=>`<option value="${d.id}"${d.id===t.deptId?' selected':''}>${d.name}</option>`).join('');
+  // Hidden toggle
+  const eHidden=document.getElementById('e-hidden');
+  eHidden.checked=t.hidden||false;
+  const eTrack=document.getElementById('e-hidden-track');
+  eTrack.style.background=eHidden.checked?'#3a5092':'var(--bg5)';
+  document.getElementById('e-hidden-row').style.display=t.deptId?'block':'none';
+  eDept.onchange=()=>{
+    document.getElementById('e-hidden-row').style.display=eDept.value?'block':'none';
+    if(!eDept.value)eHidden.checked=false;
+  };
   closeModal('detail-overlay');openModal('edit-overlay');
 }
 async function saveTaskEdit(){
@@ -1057,7 +1188,7 @@ async function saveTaskEdit(){
   const due=document.getElementById('e-due').value;
   const btn=document.getElementById('edit-btn');btn.disabled=true;btn.textContent='Saving…';
   try{
-    const payload={Title:title,Description:document.getElementById('e-desc').value.trim(),AssigneeEmail:assignee.email,Priority:document.getElementById('e-priority').value,Category:document.getElementById('e-cat').value.trim(),ProjectId:document.getElementById('e-project').value||'',DeptId:document.getElementById('e-dept').value||''};
+    const payload={Title:title,Description:document.getElementById('e-desc').value.trim(),AssigneeEmail:assignee.email,Priority:document.getElementById('e-priority').value,Category:document.getElementById('e-cat').value.trim(),ProjectId:document.getElementById('e-project').value||'',DeptId:document.getElementById('e-dept').value||'',Hidden:document.getElementById('e-hidden').checked};
     if(due)payload.DueDate=due+'T00:00:00Z';
     await spPatch(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`,payload);
     await syncAll();closeModal('edit-overlay');currentTaskId=t.id;renderDetail();openModal('detail-overlay');toast('Task updated');
@@ -1109,7 +1240,7 @@ function renderDetail(){
   document.getElementById('d-title').textContent=t.title;
   const sL={open:'Open','in-progress':'In Progress',done:'Done',blocked:'Blocked'}[t.status]||t.status;
   const sC={open:'bs-open','in-progress':'bs-in-progress',done:'bs-done',blocked:'bs-blocked'}[t.status]||'bs-open';
-  document.getElementById('d-badges').innerHTML=`<span class="badge ${sC}">${sL}</span><span class="badge bp-${t.priority}">${t.priority}</span>${t.category?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${t.category}</span>`:''}${proj?`<span class="badge" style="background:${proj.color}22;color:${proj.color};border-color:${proj.color}44;">${proj.name}</span>`:''}${assignee?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${assignee.name}</span>`:''}`;
+  document.getElementById('d-badges').innerHTML=`<span class="badge ${sC}">${sL}</span><span class="badge bp-${t.priority}">${t.priority}</span>${t.category?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${t.category}</span>`:''}${proj?`<span class="badge" style="background:${proj.color}22;color:${proj.color};border-color:${proj.color}44;">${proj.name}</span>`:''}${t.hidden?'<span class="badge" style="background:var(--amber-bg);color:var(--amber);">🔒 Hidden</span>':''}${assignee?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${assignee.name}</span>`:''}`;
   document.getElementById('d-desc').textContent=t.desc||'No description provided.';
   // Subtasks
   const sts=t.subtasks||[];
@@ -1315,9 +1446,12 @@ function renderProjectPageView(){
     const lastDay=new Date(projCalYear,projCalMonth+1,0);
     const startDow=firstDay.getDay();
     const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    let filteredProjTasks=projTasks;
+    if(calFilterPriority!=='all') filteredProjTasks=filteredProjTasks.filter(t=>t.priority===calFilterPriority);
     const buckets={};
-    projTasks.forEach(t=>{if(!t.due)return;const d=new Date(t.due+'T00:00:00');if(d.getFullYear()===projCalYear&&d.getMonth()===projCalMonth){const k=d.getDate();if(!buckets[k])buckets[k]=[];buckets[k].push({...t,_type:'task'});}});
+    filteredProjTasks.forEach(t=>{if(!t.due)return;const d=new Date(t.due+'T00:00:00');if(d.getFullYear()===projCalYear&&d.getMonth()===projCalMonth){const k=d.getDate();if(!buckets[k])buckets[k]=[];buckets[k].push({...t,_type:'task'});}});
     projMilestones.forEach(ms=>{if(!ms.due)return;const d=new Date(ms.due+'T00:00:00');if(d.getFullYear()===projCalYear&&d.getMonth()===projCalMonth){const k=d.getDate();if(!buckets[k])buckets[k]=[];buckets[k].push({...ms,_type:'milestone'});}});
+    const spanTasks2=calShowSpans?filteredProjTasks.filter(t=>{if(!t.due)return false;const due=new Date(t.due+'T00:00:00');const start=new Date(t.createdAt);start.setHours(0,0,0,0);const mE=new Date(projCalYear,projCalMonth+1,0);const mS=new Date(projCalYear,projCalMonth,1);return start<=mE&&due>=mS;}):[];
     let cells=[];
     for(let i=0;i<startDow;i++){cells.push({date:new Date(projCalYear,projCalMonth,-startDow+i+1),other:true});}
     for(let i=1;i<=lastDay.getDate();i++){cells.push({date:new Date(projCalYear,projCalMonth,i),other:false});}
@@ -1327,11 +1461,15 @@ function renderProjectPageView(){
       const isToday=cell.date.getTime()===today.getTime();
       const key=!cell.other?cell.date.getDate():null;
       const items=key&&buckets[key]?buckets[key]:[];
-      const pills=items.slice(0,3).map(item=>item._type==='milestone'?`<div class="cal-task-pill cp-milestone" title="${item.name}">★ ${item.name}</div>`:`<div class="cal-task-pill cp-${item.priority}" onclick="openDetail('${item.id}')" title="${item.title}">${item.title}</div>`).join('');
+      const dIds=items.filter(i=>i._type==='task').map(i=>i.id);
+      const spans2=calShowSpans&&key&&!cell.other?spanTasks2.filter(t=>{const s=new Date(t.createdAt);s.setHours(0,0,0,0);const du=new Date(t.due+'T00:00:00');return cell.date>=s&&cell.date<=du&&!dIds.includes(t.id);}):[];
+      const spanPills2=spans2.slice(0,2).map(t=>`<div class="cal-task-pill" onclick="openDetail('${t.id}')" title="${t.title} (ongoing)" style="background:${p.color}22;color:${p.color};border-left:2px solid ${p.color};opacity:.75;">⟶ ${t.title}</div>`).join('');
+      const pills=items.slice(0,3).map(item=>{if(item._type==='milestone')return`<div class="cal-task-pill cp-milestone" title="${item.name}">★ ${item.name}</div>`;const ov=new Date(item.due+'T00:00:00')<today;return`<div class="cal-task-pill cp-${ov?'overdue':item.priority}" onclick="openDetail('${item.id}')" title="${item.title}">${item.title}</div>`;}).join('');
       const more=items.length>3?`<div class="cal-more">+${items.length-3} more</div>`:'';
       const numEl=isToday?`<span class="today-dot">${cell.date.getDate()}</span>`:`<span>${cell.date.getDate()}</span>`;
-      return`<div class="cal-day${cell.other?' other-month':''}${isToday?' today':''}"><div class="cal-day-num">${numEl}</div>${pills}${more}</div>`;
+      return`<div class="cal-day${cell.other?' other-month':''}${isToday?' today':''}"><div class="cal-day-num">${numEl}</div>${spanPills2}${pills}${more}</div>`;
     }).join('');
+    const pjFilterBar=`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);"><span style="font-size:10px;color:var(--text3);">Priority:</span>${['all','high','medium','low'].map(pr=>`<button onclick="calFilterPriority='${pr}';renderProjectPageView();" style="padding:3px 8px;border-radius:20px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:${calFilterPriority===pr?'var(--blue-bg)':'transparent'};color:${calFilterPriority===pr?'var(--accent)':'var(--text3)'};font-family:var(--mono);">${pr==='all'?'All':pr.charAt(0).toUpperCase()+pr.slice(1)}</button>`).join('')}<div style="width:1px;height:16px;background:var(--border);"></div><span style="font-size:10px;color:var(--text3);">Spans:</span><div onclick="calShowSpans=!calShowSpans;renderProjectPageView();" style="position:relative;width:32px;height:18px;cursor:pointer;"><span style="position:absolute;inset:0;border-radius:20px;background:${calShowSpans?'#3a5092':'var(--bg5)'};transition:.2s;"></span><span style="position:absolute;height:12px;width:12px;top:3px;left:${calShowSpans?'17':'3'}px;background:white;border-radius:50%;transition:.2s;"></span></div></div>`;
     tabContent=`
       <div class="cal-header">
         <div class="cal-nav">
@@ -1341,6 +1479,7 @@ function renderProjectPageView(){
         </div>
         <button class="btn btn-ghost btn-sm" onclick="projCalYear=new Date().getFullYear();projCalMonth=new Date().getMonth();renderProjectPageView();">Today</button>
       </div>
+      ${pjFilterBar}
       <div class="cal-grid">${dayHds}${dayCells}</div>`;
   }else if(currentProjTab==='members'){
     tabContent=`
@@ -1785,39 +1924,131 @@ function renderDeptsList(){
     }).join(''):`<div class="empty"><p style="font-size:12px;">${isSA()?'No departments yet. Create one above.':'No departments available.'}</p></div>`}`;
 }
 
+// Calendar filter state
+let calFilterPriority='all';   // all | high | medium | low
+let calFilterType='all';       // all | personal | project | department
+let calShowSpans=false;        // toggle spanning bars
+
 function renderCalendarView(){
   const today=new Date();today.setHours(0,0,0,0);
+  const u=me();
   const firstDay=new Date(calYear,calMonth,1);
   const lastDay=new Date(calYear,calMonth+1,0);
   const startDow=firstDay.getDay();
   const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const allWithDue=visibleTasks().filter(t=>t.due);
-  const buckets={};
-  allWithDue.forEach(t=>{const d=new Date(t.due+'T00:00:00');if(d.getFullYear()===calYear&&d.getMonth()===calMonth){const k=d.getDate();if(!buckets[k])buckets[k]=[];buckets[k].push(t);}});
+
+  // Filter tasks
+  let allTasks=visibleTasks().filter(t=>t.due&&t.status!=='done');
+  if(calFilterPriority!=='all') allTasks=allTasks.filter(t=>t.priority===calFilterPriority);
+  if(calFilterType==='personal') allTasks=allTasks.filter(t=>!t.projectId&&!t.deptId);
+  else if(calFilterType==='project') allTasks=allTasks.filter(t=>!!t.projectId);
+  else if(calFilterType==='department') allTasks=allTasks.filter(t=>!!t.deptId&&!t.projectId);
+
+  // Build deadline buckets
+  const deadlineBuckets={};
+  allTasks.forEach(t=>{
+    const d=new Date(t.due+'T00:00:00');
+    if(d.getFullYear()===calYear&&d.getMonth()===calMonth){
+      const k=d.getDate();
+      if(!deadlineBuckets[k])deadlineBuckets[k]=[];
+      deadlineBuckets[k].push(t);
+    }
+  });
+
+  // Build span buckets (tasks ongoing during this month)
+  const spanTasks=calShowSpans?allTasks.filter(t=>{
+    const due=new Date(t.due+'T00:00:00');
+    const start=new Date(t.createdAt);start.setHours(0,0,0,0);
+    const monthEnd=new Date(calYear,calMonth+1,0);
+    const monthStart=new Date(calYear,calMonth,1);
+    return start<=monthEnd&&due>=monthStart;
+  }):[];
+
   let cells=[];
   for(let i=0;i<startDow;i++){cells.push({date:new Date(calYear,calMonth,-startDow+i+1),other:true});}
   for(let i=1;i<=lastDay.getDate();i++){cells.push({date:new Date(calYear,calMonth,i),other:false});}
   while(cells.length%7!==0){const l=cells[cells.length-1].date;cells.push({date:new Date(l.getFullYear(),l.getMonth(),l.getDate()+1),other:true});}
+
   const dayHds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-day-hd">${d}</div>`).join('');
+
   const dayCells=cells.map(cell=>{
     const isToday=cell.date.getTime()===today.getTime();
-    const key=!cell.other?cell.date.getDate():null;
-    const items=key&&buckets[key]?buckets[key]:[];
-    const pills=items.slice(0,3).map(t=>{const p=projects.find(x=>x.id===t.projectId);return`<div class="cal-task-pill cp-${t.priority}" onclick="event.stopPropagation();openDetail('${t.id}')" title="${t.title}">${p?`<span style="color:${p.color};">●</span> `:''} ${t.title}</div>`;}).join('');
-    const more=items.length>3?`<div class="cal-more">+${items.length-3} more</div>`:'';
-    const numEl=isToday?`<span class="today-dot">${cell.date.getDate()}</span>`:`<span>${cell.date.getDate()}</span>`;
-    return`<div class="cal-day${cell.other?' other-month':''}${isToday?' today':''}"><div class="cal-day-num">${numEl}</div>${pills}${more}</div>`;
+    const dayNum=cell.date.getDate();
+    const key=!cell.other?dayNum:null;
+
+    // Deadline pills
+    const deadlines=key&&deadlineBuckets[key]?deadlineBuckets[key]:[];
+    const pills=deadlines.slice(0,3).map(t=>{
+      const p=projects.find(x=>x.id===t.projectId);
+      const overdue=new Date(t.due+'T00:00:00')<today;
+      return`<div class="cal-task-pill cp-${overdue?'overdue':t.priority}" onclick="event.stopPropagation();openDetail('${t.id}')" title="${t.title}" style="${overdue?'text-decoration:line-through;opacity:.7':''}">${p?`<span style="color:${p.color};">●</span> `:''}${t.title}</div>`;
+    }).join('');
+    const more=deadlines.length>3?`<div class="cal-more">+${deadlines.length-3} more</div>`:'';
+
+    // Span indicators
+    const spans=calShowSpans?spanTasks.filter(t=>{
+      if(!key||cell.other)return false;
+      const start=new Date(t.createdAt);start.setHours(0,0,0,0);
+      const due=new Date(t.due+'T00:00:00');
+      const cellDate=cell.date;
+      return cellDate>=start&&cellDate<=due&&!deadlines.some(d=>d.id===t.id); // don't double-show deadline day
+    }):[],
+    spanPills=spans.slice(0,2).map(t=>{
+      const p=projects.find(x=>x.id===t.projectId);
+      return`<div class="cal-task-pill" onclick="event.stopPropagation();openDetail('${t.id}')" title="${t.title} (ongoing)" style="background:${p?p.color+'22':'var(--bg4)'};color:${p?p.color:'var(--text3)'};border-left:2px solid ${p?p.color:'var(--border2)'};opacity:.75;">⟶ ${t.title}</div>`;
+    }).join('');
+
+    const numEl=isToday?`<span class="today-dot">${dayNum}</span>`:`<span>${dayNum}</span>`;
+    return`<div class="cal-day${cell.other?' other-month':''}${isToday?' today':''}"><div class="cal-day-num">${numEl}</div>${spanPills}${pills}${more}</div>`;
   }).join('');
+
+  // Filter bar HTML
+  const filterBar=`
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);">
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">Filter:</div>
+
+      <div style="display:flex;gap:4px;align-items:center;">
+        <span style="font-size:10px;color:var(--text3);">Priority:</span>
+        ${['all','high','medium','low'].map(p=>`<button onclick="calFilterPriority='${p}';renderCalendarView();" style="padding:3px 8px;border-radius:20px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:${calFilterPriority===p?'var(--blue-bg)':'transparent'};color:${calFilterPriority===p?'var(--accent)':'var(--text3)'};font-family:var(--mono);transition:all .12s;">${p==='all'?'All':p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join('')}
+      </div>
+
+      <div style="width:1px;height:16px;background:var(--border);"></div>
+
+      <div style="display:flex;gap:4px;align-items:center;">
+        <span style="font-size:10px;color:var(--text3);">Type:</span>
+        ${[['all','All'],['personal','Personal'],['project','Project'],['department','Dept']].map(([v,l])=>`<button onclick="calFilterType='${v}';renderCalendarView();" style="padding:3px 8px;border-radius:20px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:${calFilterType===v?'var(--blue-bg)':'transparent'};color:${calFilterType===v?'var(--accent)':'var(--text3)'};font-family:var(--mono);transition:all .12s;">${l}</button>`).join('')}
+      </div>
+
+      <div style="width:1px;height:16px;background:var(--border);"></div>
+
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:10px;color:var(--text3);">Show spans:</span>
+        <div onclick="calShowSpans=!calShowSpans;renderCalendarView();" style="position:relative;width:32px;height:18px;cursor:pointer;">
+          <span style="position:absolute;inset:0;border-radius:20px;background:${calShowSpans?'#3a5092':'var(--bg5)'};transition:.2s;"></span>
+          <span style="position:absolute;height:12px;width:12px;top:3px;left:${calShowSpans?'17':'3'}px;background:white;border-radius:50%;transition:.2s;"></span>
+        </div>
+      </div>
+
+      <div style="margin-left:auto;font-size:10px;color:var(--text3);font-family:var(--mono);">${allTasks.filter(t=>{const d=new Date(t.due+'T00:00:00');return d.getFullYear()===calYear&&d.getMonth()===calMonth;}).length} tasks this month</div>
+    </div>`;
+
   document.getElementById('main-content').innerHTML=`<div style="padding-bottom:20px;">
     <div class="cal-header">
       <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderContent();"><svg viewBox="0 0 14 14"><path d="M9 2L4 7l5 5"/></svg></button>
+        <button class="cal-nav-btn" onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendarView();"><svg viewBox="0 0 14 14"><path d="M9 2L4 7l5 5"/></svg></button>
         <div class="cal-month">${monthName}</div>
-        <button class="cal-nav-btn" onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderContent();"><svg viewBox="0 0 14 14"><path d="M5 2l5 5-5 5"/></svg></button>
+        <button class="cal-nav-btn" onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendarView();"><svg viewBox="0 0 14 14"><path d="M5 2l5 5-5 5"/></svg></button>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderContent();">Today</button>
+      <button class="btn btn-ghost btn-sm" onclick="calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCalendarView();">Today</button>
     </div>
+    ${filterBar}
     <div class="cal-grid">${dayHds}${dayCells}</div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:10px;color:var(--text3);flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--red-bg);display:inline-block;"></span>High priority</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--amber-bg);display:inline-block;"></span>Medium</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--green-bg);display:inline-block;"></span>Low</span>
+      ${calShowSpans?`<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg4);border-left:2px solid var(--border2);display:inline-block;"></span>Ongoing (span)</span>`:''}
+    </div>
   </div>`;
 }
 
@@ -1861,7 +2092,22 @@ function updateSidebar(){
   if(effectiveIsMgr()){
     teamSect.style.display='block';
     const sub=effectiveIsSA()?users.filter(x=>x.id!==u.id):users.filter(x=>getSubtree(u.id).includes(x.id));
-    document.getElementById('team-nav-items').innerHTML=sub.map(m=>{const open=tasks.filter(t=>t.assigneeId===m.id&&t.status!=='done').length;return`<div class="nav-item" data-view="member:${m.id}" onclick="setView(this)"><div class="mini-av" style="${avColor(m.name)};width:16px;height:16px;font-size:8px;">${initials(m.name)}</div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>${open?`<span class="nav-badge">${open}</span>`:''}</div>`;}).join('')||'<div style="font-size:11px;color:var(--text3);padding:4px 8px;">No reports yet</div>';
+    document.getElementById('team-nav-items').innerHTML=
+      sub.map(m=>{
+        const open=tasks.filter(t=>t.assigneeId===m.id&&t.status!=='done').length;
+        return`<div class="nav-item" data-view="member:${m.id}" onclick="setView(this)" style="padding-right:4px;">
+          <div class="mini-av" style="${avColor(m.name)};width:16px;height:16px;font-size:8px;">${initials(m.name)}</div>
+          <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>
+          ${open?`<span class="nav-badge">${open}</span>`:''}
+          ${isMgr()&&!effectiveIsSA()&&m.managerEmail===u.email?`<span onclick="event.stopPropagation();removeFromTeam('${m.id}')" style="color:var(--text3);font-size:13px;line-height:1;padding:0 2px;cursor:pointer;opacity:0;" class="rm-btn" title="Remove from team">×</span>`:''}
+        </div>`;
+      }).join('')+
+      (sub.length?'':'<div style="font-size:11px;color:var(--text3);padding:4px 8px;">No reports yet</div>');
+    // Show hover remove buttons via CSS
+    document.querySelectorAll('.rm-btn').forEach(btn=>{
+      btn.parentElement.addEventListener('mouseenter',()=>btn.style.opacity='1');
+      btn.parentElement.addEventListener('mouseleave',()=>btn.style.opacity='0');
+    });
   }else teamSect.style.display='none';
   // Project nav
   const activeProjects=projects.filter(p=>p.status==='active'&&isProjectMember(p.id));
@@ -1903,6 +2149,129 @@ async function deleteUser(){
   try{await spDelete(`/web/lists/getbytitle('TF_Users')/items(${u.spId})`);await syncAll();closeModal('adduser-overlay');toast('User removed');}
   catch(e){toast('Failed',true);}
 }
+// ── ADD TO TEAM (Managers) ──
+let addTeamTab = 'existing';
+let addTeamSelectedUserId = null;
+
+function openAddToTeamModal() {
+  addTeamTab = 'existing';
+  addTeamSelectedUserId = null;
+  document.getElementById('att-search').value = '';
+  document.getElementById('att-new-name').value = '';
+  document.getElementById('att-new-email').value = '';
+  document.getElementById('att-new-role').value = 'member';
+  document.getElementById('att-selected-user').style.display = 'none';
+  setAddTeamTab('existing');
+  renderAddTeamUserList('');
+  openModal('addteam-overlay');
+}
+
+function setAddTeamTab(tab) {
+  addTeamTab = tab;
+  addTeamSelectedUserId = null;
+  document.getElementById('att-existing-panel').style.display = tab === 'existing' ? 'block' : 'none';
+  document.getElementById('att-new-panel').style.display = tab === 'new' ? 'block' : 'none';
+  const exBtn = document.getElementById('att-tab-existing');
+  const nwBtn = document.getElementById('att-tab-new');
+  exBtn.className = 'btn btn-sm ' + (tab === 'existing' ? 'btn-primary' : 'btn-ghost');
+  exBtn.style.flex = '1'; exBtn.style.justifyContent = 'center';
+  nwBtn.className = 'btn btn-sm ' + (tab === 'new' ? 'btn-primary' : 'btn-ghost');
+  nwBtn.style.flex = '1'; nwBtn.style.justifyContent = 'center';
+}
+
+function filterAddTeamUsers() {
+  const q = document.getElementById('att-search').value.toLowerCase();
+  renderAddTeamUserList(q);
+}
+
+function renderAddTeamUserList(query) {
+  const u = me();
+  // Exclude: current user, people already reporting to this manager, and SAs
+  const alreadyOnTeam = users.filter(x => x.managerEmail === u?.email).map(x => x.id);
+  const eligible = users.filter(x =>
+    x.id !== u?.id &&
+    x.role !== 'superadmin' &&
+    !alreadyOnTeam.includes(x.id) &&
+    (!query || x.name.toLowerCase().includes(query) || x.email.includes(query))
+  );
+  const container = document.getElementById('att-user-list');
+  if (!eligible.length) {
+    container.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--text3);text-align:center;">${query ? 'No matching users' : 'All registered users are already on your team'}</div>`;
+    return;
+  }
+  container.innerHTML = eligible.map(usr => `
+    <div onclick="selectAddTeamUser('${usr.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;" onmouseover="this.style.background='var(--bg4)'" onmouseout="this.style.background='transparent'">
+      <div class="mini-av" style="${avColor(usr.name)};width:28px;height:28px;font-size:11px;">${initials(usr.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;">${usr.name}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);">${usr.email} · ${usr.role}</div>
+      </div>
+      ${usr.managerEmail ? `<div style="font-size:10px;color:var(--amber);font-family:var(--mono);">currently → ${users.find(x=>x.email===usr.managerEmail)?.name||usr.managerEmail}</div>` : ''}
+    </div>`).join('');
+}
+
+function selectAddTeamUser(userId) {
+  addTeamSelectedUserId = userId;
+  const usr = users.find(x => x.id === userId);
+  if (!usr) return;
+  document.getElementById('att-selected-user').style.display = 'block';
+  document.getElementById('att-selected-name').textContent = usr.name;
+  document.getElementById('att-selected-email').textContent = usr.email;
+  // Highlight selected row
+  document.querySelectorAll('#att-user-list > div').forEach(el => el.style.background = 'transparent');
+}
+
+async function saveAddToTeam() {
+  const u = me(); if (!u) return;
+  const btn = document.getElementById('att-save-btn');
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    if (addTeamTab === 'existing') {
+      if (!addTeamSelectedUserId) { toast('Please select a user', true); return; }
+      const usr = users.find(x => x.id === addTeamSelectedUserId); if (!usr) return;
+      // Update their ManagerEmail to point to current manager
+      await spPatch(`/web/lists/getbytitle('TF_Users')/items(${usr.spId})`, { ManagerEmail: u.email });
+      await syncAll();
+      closeModal('addteam-overlay');
+      toast(`${usr.name} added to your team`);
+    } else {
+      // New person
+      const name = document.getElementById('att-new-name').value.trim();
+      const email = document.getElementById('att-new-email').value.trim().toLowerCase();
+      const role = document.getElementById('att-new-role').value;
+      if (!name || !email) { toast('Name and email required', true); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Please enter a valid email', true); return; }
+      // Check if already exists
+      const existing = users.find(x => x.email === email);
+      if (existing) {
+        // Just update their manager
+        await spPatch(`/web/lists/getbytitle('TF_Users')/items(${existing.spId})`, { ManagerEmail: u.email });
+        await syncAll();
+        closeModal('addteam-overlay');
+        toast(`${existing.name} already existed — updated to report to you`);
+      } else {
+        await spPost(`/web/lists/getbytitle('TF_Users')/items`, { Title: name, Email: email, Role: role, ManagerEmail: u.email, AzureId: '' });
+        await syncAll();
+        closeModal('addteam-overlay');
+        toast(`${name} added to your team`);
+      }
+    }
+    renderAll();
+  } catch(e) { toast('Failed to add team member', true); console.error(e); }
+  finally { btn.disabled = false; btn.textContent = 'Add to My Team'; }
+}
+
+async function removeFromTeam(userId) {
+  const usr = users.find(x => x.id === userId); if (!usr) return;
+  if (!confirm(`Remove ${usr.name} from your team? Their reporting line will be cleared.`)) return;
+  try {
+    await spPatch(`/web/lists/getbytitle('TF_Users')/items(${usr.spId})`, { ManagerEmail: '' });
+    await syncAll();
+    renderAll();
+    toast(`${usr.name} removed from your team`);
+  } catch(e) { toast('Failed to remove team member', true); }
+}
+
 function openOrgModal(){renderOrgTree();openModal('org-overlay');}
 function renderOrgTree(){
   const roots=users.filter(u=>!u.managerEmail);
