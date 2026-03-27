@@ -58,8 +58,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 /* APP LAYOUT */
 #app-screen{display:none;}
 .app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:224px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar{width:224px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width .22s cubic-bezier(.4,0,.2,1);}
+.sidebar.collapsed{width:48px;}
+.sidebar.collapsed .sb-top-full{display:none;}
+.sidebar.collapsed .sb-top-mini{display:flex !important;}
+.sidebar.collapsed .sb-nav{display:none;}
+.sidebar.collapsed .sb-footer-full{display:none;}
+.sidebar.collapsed .sb-footer-mini{display:flex !important;}
 .sb-top{padding:14px 12px;border-bottom:1px solid var(--border);}
+.sb-top-mini{display:none;align-items:center;justify-content:center;padding:12px 0;border-bottom:1px solid var(--border);}
+.sb-footer-mini{display:none;flex-direction:column;align-items:center;gap:6px;padding:10px 0;border-top:1px solid var(--border);}
 .logo{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .me-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;}
 .me-row{display:flex;align-items:center;gap:8px;}
@@ -69,6 +77,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .sb-nav{flex:1;overflow-y:auto;padding:8px 6px;}
 .nav-sect{margin-bottom:12px;}
 .nav-sect-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:0 8px;margin-bottom:3px;}
+.nav-sect-label-btn{display:flex;align-items:center;width:100%;background:none;border:none;cursor:pointer;font:inherit;padding:3px 8px;border-radius:5px;color:var(--text3);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;transition:background .12s;}
+.nav-sect-label-btn:hover{background:var(--bg3);color:var(--text2);}
+.nav-sect-label-btn .chevron{margin-left:auto;transition:transform .2s;width:10px;height:10px;}
+.nav-sect-label-btn.collapsed .chevron{transform:rotate(-90deg);}
+.nav-sect-body{overflow:hidden;transition:max-height .22s cubic-bezier(.4,0,.2,1);}
+.nav-sect-body.collapsed{max-height:0 !important;}
 .nav-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .12s;margin-bottom:1px;user-select:none;}
 .nav-item:hover{background:var(--bg3);color:var(--text);}
 .nav-item.active{background:var(--blue-bg);color:var(--accent);}
@@ -77,11 +91,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .nav-item.active .nav-badge{background:var(--blue-bg);color:var(--accent2);}
 .nav-color-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .sb-footer{padding:8px 6px 10px;border-top:1px solid var(--border);}
+.sb-footer-full{}
 .sync-indicator{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:10px;color:var(--text3);font-family:var(--mono);}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
 .sync-dot.syncing{background:var(--amber);animation:pulse 1s ease-in-out infinite;}
 .sync-dot.error{background:var(--red);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.collapse-btn{width:28px;height:28px;border-radius:6px;background:transparent;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s;}
+.collapse-btn:hover{background:var(--bg3);color:var(--text);}
+.collapse-btn svg{width:13px;height:13px;transition:transform .22s;}
 
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -378,8 +396,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <!-- APP -->
 <div id="app-screen">
 <div class="app">
-  <aside class="sidebar">
-    <div class="sb-top">
+  <aside class="sidebar" id="sidebar">
+    <!-- Mini sidebar shown when collapsed -->
+    <div class="sb-top-mini">
+      <button class="collapse-btn" onclick="toggleSidebar()" title="Expand sidebar">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 2l5 5-5 5"/></svg>
+      </button>
+    </div>
+    <div class="sb-footer-mini">
+      <button class="collapse-btn" onclick="refreshAll()" title="Refresh"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 7A5 5 0 1 1 7 2"/><path d="M12 2v5h-5"/></svg></button>
+      <button class="collapse-btn" onclick="signOut()" title="Sign out"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 10v2H2V2h7v2M6 7h7M10 5l3 2-3 2"/></svg></button>
+    </div>
+
+    <div class="sb-top sb-top-full">
       <div class="logo">
         <svg viewBox="220 295 600 180" style="width:78px;height:auto;" xmlns="http://www.w3.org/2000/svg">
           <path d="m 325.51,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" fill="#3a5092"/>
@@ -387,7 +416,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <path d="m 598.05,308.4 h -40.2 l -59.4,151.2 h 45.9 l 9.6,-26.7 h 46.5 l 4.8,26.7 h 45 l -32.4,-151.2 z m -32.7,92.1 19.2,-54 9.9,54 z" fill="#3a5092"/>
           <path d="m 798.01,352.8 c 0,-21.9 -17.7,-44.4 -42.6,-44.4 h -82.5 l -13.5,151.2 h 43.2 l 4.8,-54.3 h 5.7 l 25.8,54.3 h 50.1 l -27.6,-57.9 c 24,-7.2 36.6,-25.8 36.6,-48.9 z m -57,-11.7 c 7.5,0 13.8,7.8 13.8,14.4 0,6.6 -5.4,18 -17.4,18 h -27 l 3,-32.1 h 27.6 z" fill="#3a5092"/>
         </svg>
-        <div style="font-size:9px;color:var(--text3);font-family:var(--mono);" id="sb-site-label">tasks</div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono);flex:1;" id="sb-site-label">tasks</div>
+        <button class="collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2L4 7l5 5"/></svg>
+        </button>
       </div>
       <div class="me-card">
         <div class="me-row">
@@ -402,7 +434,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="sb-nav" id="sb-nav">
       <div class="nav-sect" data-section="tasks">
         <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
-        <div class="nav-sect-label">Tasks</div>
+        <button class="nav-sect-label-btn" onclick="toggleNavSect('tasks')" id="lbl-tasks">
+          Tasks
+          <svg class="chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-sect-body" id="body-tasks">
         <div class="nav-item active" data-view="all" onclick="setView(this)">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="12" height="12" rx="2"/><path d="M4 7h6M4 4.5h6M4 9.5h4"/></svg>
           All Tasks<span class="nav-badge" id="nc-all">0</span>
@@ -427,14 +463,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="2.5" width="12" height="10" rx="1.5"/><path d="M1 6h12M4.5 1v3M9.5 1v3"/></svg>
           Calendar<span class="nav-badge" id="nc-calendar">0</span>
         </div>
+        </div>
       </div>
 
       <div class="nav-sect" data-section="projects">
         <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
-        <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
+        <button class="nav-sect-label-btn" onclick="toggleNavSect('projects')" id="lbl-projects" style="justify-content:flex-start;">
           Projects
-          <span onclick="openCreateProjectModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;" title="New project">+</span>
-        </div>
+          <svg class="chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-left:auto;margin-right:4px;"><path d="M1 1l4 4 4-4"/></svg>
+          <span onclick="event.stopPropagation();openCreateProjectModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;flex-shrink:0;" title="New project">+</span>
+        </button>
+        <div class="nav-sect-body" id="body-projects">
         <div class="nav-item" data-view="projects" onclick="setView(this)">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
           All Projects<span class="nav-badge" id="nc-projects">0</span>
@@ -444,33 +483,44 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           Archive
         </div>
         <div id="project-nav-items"></div>
+        </div>
       </div>
 
       <div class="nav-sect" data-section="departments">
         <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
-        <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
+        <button class="nav-sect-label-btn" onclick="toggleNavSect('departments')" id="lbl-departments" style="justify-content:flex-start;">
           Departments
-          <span id="dept-add-btn" onclick="openCreateDeptModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;display:none;" title="New department">+</span>
-        </div>
+          <svg class="chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-left:auto;margin-right:4px;"><path d="M1 1l4 4 4-4"/></svg>
+          <span id="dept-add-btn" onclick="event.stopPropagation();openCreateDeptModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;display:none;flex-shrink:0;" title="New department">+</span>
+        </button>
+        <div class="nav-sect-body" id="body-departments">
         <div class="nav-item" data-view="departments" onclick="setView(this)">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 1l6 3v2H1V4l6-3z"/><rect x="2" y="6" width="2" height="5"/><rect x="6" y="6" width="2" height="5"/><rect x="10" y="6" width="2" height="5"/><path d="M1 11h12"/></svg>
           All Departments<span class="nav-badge" id="nc-depts">0</span>
         </div>
         <div id="dept-nav-items"></div>
+        </div>
       </div>
 
       <div class="nav-sect" id="team-nav-sect" data-section="team" style="display:none;">
         <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
-        <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
+        <button class="nav-sect-label-btn" onclick="toggleNavSect('team')" id="lbl-team" style="justify-content:flex-start;">
           My Team
-          <span onclick="openAddToTeamModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;" title="Add team member">+</span>
-        </div>
+          <svg class="chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-left:auto;margin-right:4px;"><path d="M1 1l4 4 4-4"/></svg>
+          <span onclick="event.stopPropagation();openAddToTeamModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;flex-shrink:0;" title="Add team member">+</span>
+        </button>
+        <div class="nav-sect-body" id="body-team">
         <div id="team-nav-items"></div>
+        </div>
       </div>
 
       <div class="nav-sect" id="admin-nav-sect" data-section="admin" style="display:none;">
         <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
-        <div class="nav-sect-label">Admin</div>
+        <button class="nav-sect-label-btn" onclick="toggleNavSect('admin')" id="lbl-admin">
+          Admin
+          <svg class="chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-sect-body" id="body-admin">
         <div class="nav-item" onclick="openOrgModal()">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="1" width="4" height="3" rx="1"/><rect x="1" y="10" width="4" height="3" rx="1"/><rect x="9" y="10" width="4" height="3" rx="1"/><path d="M7 4v2M3 10V9a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/></svg>
           Org Chart
@@ -479,9 +529,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="5" cy="4.5" r="2"/><circle cx="9.5" cy="4.5" r="2"/><path d="M1 12c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/><path d="M10 8.5c1.5 0 3 1 3 3"/></svg>
           Manage Users<span class="nav-badge" id="nc-users">0</span>
         </div>
+        </div>
       </div>
     </div>
-    <div class="sb-footer">
+    <div class="sb-footer sb-footer-full">
       <div class="role-toggle-wrap" id="role-toggle-wrap" style="display:none;">
         <div class="role-toggle-label">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="5" r="3"/><path d="M1 12c0-2.5 2.7-4 6-4s6 1.5 6 4"/></svg>
@@ -2218,10 +2269,8 @@ function updateSidebar(){
       });
     });
 
-    // Wire up drag on team member items (only for real managers, not SA view)
-    if(!effectiveIsSA()){
-      initTeamMemberDrag(u.id);
-    }
+    // Wire up drag for all managers including SA
+    initTeamMemberDrag(u.id);
   }else teamSect.style.display='none';
   // Project nav
   const activeProjects=projects.filter(p=>p.status==='active'&&isProjectMember(p.id));
@@ -2242,6 +2291,12 @@ function updateSidebar(){
   const note=document.getElementById('perm-note');
   if(effectiveRole()==='member'){note.textContent='You see tasks assigned to or created by you. You can also view and participate in projects and departments you belong to.';note.classList.add('show');}
   else note.classList.remove('show');
+  // Refresh max-heights for expanded sections after dynamic content updates
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.nav-sect-body:not(.collapsed)').forEach(b=>{
+      b.style.maxHeight='none'; // allow full height for dynamic content
+    });
+  });
 }
 
 // ══════════════════════════════════════════════════════
@@ -2467,7 +2522,7 @@ function showScreen(s){
   document.getElementById('loading-screen').style.display=s==='loading'?'flex':'none';
   document.getElementById('app-screen').style.display=s==='app'?'block':'none';
 }
-function showApp(){showScreen('app');initSidebarDrag();renderAll();}
+function showApp(){showScreen('app');initSidebarDrag();restoreSidebarState();renderAll();}
 function setLoadingText(t){const el=document.getElementById('loading-text');if(el)el.textContent=t;}
 function setSyncState(s){const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label');dot.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');lbl.textContent=s==='syncing'?'syncing…':s==='error'?'sync error':'synced';}
 function openModal(id){document.getElementById(id).classList.add('open');}
@@ -2480,8 +2535,68 @@ function populateMgrSel(selId,currentVal,excludeEmail){const sel=document.getEle
 // HELPERS
 // ══════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════
-// SIDEBAR DRAG & DROP REORDER
+// SIDEBAR COLLAPSE & SECTION COLLAPSE
 // ══════════════════════════════════════════════════════
+const SB_COLLAPSED_KEY='avar_sb_collapsed';
+const SB_SECTS_KEY='avar_sb_sects';
+
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const isCollapsed=sb.classList.toggle('collapsed');
+  localStorage.setItem(SB_COLLAPSED_KEY,isCollapsed?'1':'0');
+}
+
+function toggleNavSect(sectId){
+  const body=document.getElementById('body-'+sectId);
+  const btn=document.getElementById('lbl-'+sectId);
+  if(!body||!btn)return;
+  const isNowCollapsed=!body.classList.contains('collapsed');
+  if(isNowCollapsed){
+    // Collapse: set explicit height first then animate to 0
+    body.style.maxHeight=body.scrollHeight+'px';
+    requestAnimationFrame(()=>{
+      body.style.maxHeight='0px';
+      body.classList.add('collapsed');
+      btn.classList.add('collapsed');
+    });
+  }else{
+    // Expand
+    body.classList.remove('collapsed');
+    btn.classList.remove('collapsed');
+    body.style.maxHeight=body.scrollHeight+'px';
+    // After transition remove explicit max-height so dynamic content works
+    setTimeout(()=>{ if(!body.classList.contains('collapsed')) body.style.maxHeight='none'; },230);
+  }
+  const saved=JSON.parse(localStorage.getItem(SB_SECTS_KEY)||'{}');
+  saved[sectId]=isNowCollapsed?'0':'1';
+  localStorage.setItem(SB_SECTS_KEY,JSON.stringify(saved));
+}
+
+function restoreSidebarState(){
+  // Restore sidebar collapsed state
+  const sb=document.getElementById('sidebar');
+  if(localStorage.getItem(SB_COLLAPSED_KEY)==='1') sb?.classList.add('collapsed');
+
+  // Restore section collapsed states
+  const saved=JSON.parse(localStorage.getItem(SB_SECTS_KEY)||'{}');
+  Object.entries(saved).forEach(([sectId,state])=>{
+    if(state==='0'){ // 0 = collapsed
+      const body=document.getElementById('body-'+sectId);
+      const btn=document.getElementById('lbl-'+sectId);
+      if(body) body.classList.add('collapsed');
+      if(btn) btn.classList.add('collapsed');
+    }
+  });
+
+  // Set max-height for open sections so transition works
+  document.querySelectorAll('.nav-sect-body').forEach(body=>{
+    if(!body.classList.contains('collapsed')){
+      body.style.maxHeight=body.scrollHeight+'px';
+    } else {
+      body.style.maxHeight='0px';
+    }
+  });
+}
 const SB_ORDER_KEY = 'avar_sb_order';
 let sbDragSrc = null;
 
