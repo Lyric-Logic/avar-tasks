@@ -2169,10 +2169,15 @@ async function saveUser(){
   const btn=document.getElementById('au-save-btn');btn.disabled=true;btn.textContent='Saving…';
   try{
     const payload={Title:name,Email:email,Role:role,ManagerEmail:mgrEmail};
-    if(editingUserId){const u=users.find(x=>x.id===editingUserId);await spPatch(`/web/lists/getbytitle('TF_Users')/items(${u.spId})`,payload);}
-    else{await spPost(`/web/lists/getbytitle('TF_Users')/items`,payload);}
+    if(editingUserId){
+      const u=users.find(x=>x.id===editingUserId);
+      await spPatch(`/web/lists/getbytitle('TF_Users')/items(${u.spId})`,payload);
+    }else{
+      payload.AzureId=''; // required column in TF_Users
+      await spPost(`/web/lists/getbytitle('TF_Users')/items`,payload);
+    }
     await syncAll();updateSidebar();renderAll();renderUsersList();closeModal('adduser-overlay');toast(editingUserId?'User updated':'User added');
-  }catch(e){toast('Failed',true);}
+  }catch(e){toast('Failed: '+e.message,true);console.error('saveUser error:',e);}
   finally{btn.disabled=false;btn.textContent='Save';}
 }
 async function deleteUser(){
@@ -2257,42 +2262,63 @@ function selectAddTeamUser(userId) {
 
 async function saveAddToTeam() {
   const u = me(); if (!u) return;
+
+  // Validate first BEFORE disabling the button
+  if (addTeamTab === 'existing') {
+    if (!addTeamSelectedUserId) { toast('Please select a user first', true); return; }
+  } else {
+    const name = document.getElementById('att-new-name').value.trim();
+    const email = document.getElementById('att-new-email').value.trim().toLowerCase();
+    if (!name || !email) { toast('Name and email are required', true); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Please enter a valid email address', true); return; }
+  }
+
   const btn = document.getElementById('att-save-btn');
   btn.disabled = true; btn.textContent = 'Adding…';
+
   try {
     if (addTeamTab === 'existing') {
-      if (!addTeamSelectedUserId) { toast('Please select a user', true); return; }
       const usr = users.find(x => x.id === addTeamSelectedUserId); if (!usr) return;
-      // Update their ManagerEmail to point to current manager
       await spPatch(`/web/lists/getbytitle('TF_Users')/items(${usr.spId})`, { ManagerEmail: u.email });
       await syncAll();
       closeModal('addteam-overlay');
+      renderAll();
       toast(`${usr.name} added to your team`);
     } else {
-      // New person
       const name = document.getElementById('att-new-name').value.trim();
       const email = document.getElementById('att-new-email').value.trim().toLowerCase();
       const role = document.getElementById('att-new-role').value;
-      if (!name || !email) { toast('Name and email required', true); return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Please enter a valid email', true); return; }
-      // Check if already exists
+      // Check if user already exists
       const existing = users.find(x => x.email === email);
       if (existing) {
-        // Just update their manager
         await spPatch(`/web/lists/getbytitle('TF_Users')/items(${existing.spId})`, { ManagerEmail: u.email });
         await syncAll();
         closeModal('addteam-overlay');
-        toast(`${existing.name} already existed — updated to report to you`);
+        renderAll();
+        toast(`${existing.name} already exists — updated to report to you`);
       } else {
-        await spPost(`/web/lists/getbytitle('TF_Users')/items`, { Title: name, Email: email, Role: role, ManagerEmail: u.email, AzureId: '' });
+        // Create new user — include AzureId as empty string (required column in TF_Users)
+        const payload = { Title: name, Email: email, Role: role, ManagerEmail: u.email, AzureId: '' };
+        await spPost(`/web/lists/getbytitle('TF_Users')/items`, payload);
         await syncAll();
         closeModal('addteam-overlay');
+        renderAll();
         toast(`${name} added to your team`);
       }
     }
-    renderAll();
-  } catch(e) { toast('Failed to add team member', true); console.error(e); }
-  finally { btn.disabled = false; btn.textContent = 'Add to My Team'; }
+  } catch(e) {
+    const msg = e.message || 'Unknown error';
+    const hint = msg.includes('401') || msg.includes('403')
+      ? ' — check that all users have Contribute access to TF_Users list in SharePoint'
+      : msg.includes('400')
+      ? ' — check TF_Users column names (Title, Email, Role, ManagerEmail, AzureId)'
+      : '';
+    toast('Failed: ' + msg + hint, true);
+    console.error('saveAddToTeam error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to My Team';
+  }
 }
 
 async function removeFromTeam(userId) {
