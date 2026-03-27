@@ -1112,24 +1112,46 @@ function canManageDept(deptId){
 }
 
 // ══════════════════════════════════════════════════════
-// MSAL AUTH
 // ══════════════════════════════════════════════════════
+// MSAL AUTH — auto-detects iframe vs standalone
+// ══════════════════════════════════════════════════════
+
+// Detect if running inside an iframe (e.g. SharePoint embed)
+const IN_IFRAME = (() => { try { return window.self !== window.top; } catch(e) { return true; } })();
+
 function initMSAL(){
   setLoginStatus('Connecting to Microsoft…');
   clearMSALState();
-  const cfg={auth:{clientId:CFG.client,authority:`https://login.microsoftonline.com/${CFG.tenant}`,redirectUri:CFG.redirectUri,navigateToLoginRequestUrl:false},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}};
+  const cfg={
+    auth:{
+      clientId:CFG.client,
+      authority:`https://login.microsoftonline.com/${CFG.tenant}`,
+      redirectUri:CFG.redirectUri,
+      navigateToLoginRequestUrl:false
+    },
+    cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
+  };
   try{
     msalInstance=new msal.PublicClientApplication(cfg);
     msalInstance.initialize().then(()=>{
-      msalInstance.handleRedirectPromise().then(resp=>{
-        if(resp?.account){msUser=resp.account;acquireToken();return;}
+      if(!IN_IFRAME){
+        // Standalone: handle redirect promise (returning from login redirect)
+        msalInstance.handleRedirectPromise().then(resp=>{
+          if(resp?.account){msUser=resp.account;acquireToken();return;}
+          const accs=msalInstance.getAllAccounts();
+          if(accs.length>0){msUser=accs[0];acquireToken();return;}
+          setLoginStatus('Ready — click Sign in with Microsoft');
+        }).catch(e=>{clearMSALState();setLoginStatus('Ready — click Sign in with Microsoft');});
+      }else{
+        // In iframe: skip redirect promise, just check cached accounts
         const accs=msalInstance.getAllAccounts();
         if(accs.length>0){msUser=accs[0];acquireToken();return;}
         setLoginStatus('Ready — click Sign in with Microsoft');
-      }).catch(e=>{clearMSALState();setLoginStatus('Ready — click Sign in with Microsoft');});
+      }
     }).catch(e=>{setLoginStatus('Init error: '+(e.message||e.errorCode),true);});
   }catch(e){setLoginStatus('Startup error: '+e.message,true);}
 }
+
 function clearMSALState(){
   try{
     const keys=[];
@@ -1138,25 +1160,71 @@ function clearMSALState(){
     sessionStorage.clear();
   }catch(e){}
 }
+
 function hardReset(){
   try{localStorage.clear();sessionStorage.clear();document.cookie.split(';').forEach(c=>{document.cookie=c.replace(/^ +/,'').replace(/=.*/,'=;expires='+new Date().toUTCString()+';path=/');});}catch(e){}
   window.location.href=window.location.href.split('?')[0]+'?reset='+Date.now();
 }
-function setLoginStatus(msg,isErr=false){const el=document.getElementById('login-status');if(el){el.textContent=msg;el.style.color=isErr?'var(--red)':'var(--text3)';}}
+
+function setLoginStatus(msg,isErr=false){
+  const el=document.getElementById('login-status');
+  if(el){el.textContent=msg;el.style.color=isErr?'var(--red)':'var(--text3)';}
+}
+
 function signIn(){
   if(!msalInstance){setLoginStatus('Still initializing',true);return;}
   clearMSALState();
-  setLoginStatus('Redirecting to Microsoft login…');
-  msalInstance.loginRedirect({scopes:['User.Read']}).catch(e=>{setLoginStatus('Error: '+(e.errorMessage||e.message||e.errorCode),true);});
+  if(IN_IFRAME){
+    // Inside SharePoint/Teams iframe — must use popup (redirects blocked by browser)
+    setLoginStatus('Opening Microsoft login popup…');
+    msalInstance.loginPopup({scopes:['User.Read']})
+      .then(resp=>{
+        if(resp?.account){msUser=resp.account;acquireToken();}
+      })
+      .catch(e=>{
+        if(e.errorCode==='popup_window_error'||e.errorCode==='empty_window_error'){
+          setLoginStatus('Popup blocked — please allow popups for this site, then try again',true);
+        }else if(e.errorCode==='user_cancelled'){
+          setLoginStatus('Sign in cancelled — click the button to try again');
+        }else{
+          setLoginStatus('Error: '+(e.errorMessage||e.message||e.errorCode),true);
+        }
+      });
+  }else{
+    // Standalone — use redirect (more reliable, no popup blockers)
+    setLoginStatus('Redirecting to Microsoft login…');
+    msalInstance.loginRedirect({scopes:['User.Read']}).catch(e=>{
+      setLoginStatus('Error: '+(e.errorMessage||e.message||e.errorCode),true);
+    });
+  }
 }
+
 function acquireToken(){
   showScreen('loading');setLoadingText('acquiring token…');
   const scopes=['https://avarglobal.sharepoint.com/AllSites.Write'];
   msalInstance.acquireTokenSilent({scopes,account:msUser})
     .then(r=>{accessToken=r.accessToken;loadUserAndStart();})
-    .catch(()=>{msalInstance.acquireTokenRedirect({scopes,account:msUser});});
+    .catch(()=>{
+      if(IN_IFRAME){
+        // In iframe — use popup for token acquisition too
+        msalInstance.acquireTokenPopup({scopes,account:msUser})
+          .then(r=>{accessToken=r.accessToken;loadUserAndStart();})
+          .catch(e=>{console.error(e);showScreen('login');setLoginStatus('Session expired — sign in again',true);});
+      }else{
+        msalInstance.acquireTokenRedirect({scopes,account:msUser});
+      }
+    });
 }
-function signOut(){if(demoMode){location.reload();return;}msalInstance.logoutRedirect();}
+
+function signOut(){
+  if(IN_IFRAME){
+    // In iframe — clear local state and reload rather than full redirect logout
+    clearMSALState();
+    msalInstance.logoutPopup().catch(()=>{}).finally(()=>location.reload());
+  }else{
+    msalInstance.logoutRedirect();
+  }
+}
 
 // ══════════════════════════════════════════════════════
 // SHAREPOINT API
