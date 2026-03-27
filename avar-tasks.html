@@ -480,6 +480,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 7A5 5 0 1 1 7 2"/><path d="M12 2v5h-5"/></svg>
           Refresh
         </button>
+        <button class="btn btn-ghost btn-sm" onclick="openNotifSettings()" style="justify-content:center;" title="Notification settings">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 1.5a4 4 0 0 1 4 4v2.5l1 2H2l1-2V5.5a4 4 0 0 1 4-4z"/><path d="M5.5 11.5a1.5 1.5 0 0 0 3 0"/></svg>
+        </button>
         <button class="btn btn-ghost btn-sm" onclick="signOut()">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 10v2H2V2h7v2M6 7h7M10 5l3 2-3 2"/></svg>
         </button>
@@ -684,31 +687,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="mf"><button class="btn btn-ghost" onclick="closeModal('create-proj-overlay')">Cancel</button><button class="btn btn-primary" id="create-proj-btn" onclick="createProject()">Create Project</button></div>
 </div>
 </div>
-
-<!-- PROJECT DETAIL -->
-<div class="overlay" id="proj-detail-overlay">
-<div class="modal proj-detail">
-  <div class="mh">
-    <div style="flex:1;min-width:0;">
-      <div class="mh-title" id="pd-title"></div>
-      <div style="display:flex;gap:6px;margin-top:6px;" id="pd-badges"></div>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <button class="btn btn-ghost btn-sm" id="pd-edit-btn" onclick="openEditProjectModal()">Edit</button>
-      <button class="close-x" onclick="closeModal('proj-detail-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
-    </div>
-  </div>
-  <div class="proj-tabs" id="pd-tabs">
-    <div class="proj-tab active" data-tab="overview" onclick="setProjTab(this)">Overview</div>
-    <div class="proj-tab" data-tab="tasks" onclick="setProjTab(this)">Tasks</div>
-    <div class="proj-tab" data-tab="milestones" onclick="setProjTab(this)">Milestones</div>
-    <div class="proj-tab" data-tab="calendar" onclick="setProjTab(this)">Calendar</div>
-    <div class="proj-tab" data-tab="members" onclick="setProjTab(this)">Members</div>
-  </div>
-  <div id="pd-content"></div>
-</div>
-</div>
-
 <!-- EDIT PROJECT -->
 <div class="overlay" id="edit-proj-overlay">
 <div class="modal" style="max-width:520px;">
@@ -866,6 +844,59 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
 </div>
 </div>
+<!-- NOTIFICATION SETTINGS -->
+<div class="overlay" id="notif-overlay">
+<div class="modal" style="max-width:520px;">
+  <div class="mh">
+    <div><div class="mh-title">Notification Settings</div><div class="mh-sub">via Microsoft Power Automate</div></div>
+    <button class="close-x" onclick="closeModal('notif-overlay')"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+  </div>
+  <div class="mb">
+    <div id="notif-status-bar" style="padding:10px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <div id="notif-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;"></div>
+      <div><div id="notif-status-text" style="font-size:12px;font-weight:500;">Not configured</div><div style="font-size:11px;color:var(--text3);">Add your Power Automate URL to enable email notifications</div></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:8px;">Sends emails for:</div>
+      <div style="font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:5px;">
+        <div>✓ Task assigned to you</div>
+        <div>✓ New update or comment on your task</div>
+        <div>✓ Tasks that are overdue (checked on each login)</div>
+      </div>
+    </div>
+    <div class="fr">
+      <label class="fl">Power Automate HTTP Trigger URL</label>
+      <input class="fi" id="notif-url-inp" placeholder="https://prod-xx.westeurope.logic.azure.com/workflows/..." style="font-size:11px;font-family:var(--mono);">
+      <div style="font-size:11px;color:var(--text3);margin-top:5px;">Stored locally in your browser — each team member sets this on their own device.</div>
+    </div>
+    <div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;">How to set up the Power Automate flow:</div>
+      <div style="font-size:11px;color:var(--text2);line-height:2;">
+        1. Go to <strong>make.powerautomate.com</strong><br>
+        2. Click <strong>+ Create → Automated cloud flow</strong><br>
+        3. Trigger: <strong>"When an HTTP request is received"</strong> → Method: POST<br>
+        4. Paste this into "Request Body JSON Schema":
+      </div>
+      <pre style="font-size:10px;background:var(--bg4);padding:8px;border-radius:6px;margin:8px 0;color:var(--text2);overflow-x:auto;">{"type":"object","properties":{"to":{"type":"string"},"subject":{"type":"string"},"body":{"type":"string"},"event":{"type":"string"}}}</pre>
+      <div style="font-size:11px;color:var(--text2);line-height:2;">
+        5. Add step: <strong>Send an email (V2)</strong> (Office 365 Outlook)<br>
+        6. To = <code style="background:var(--bg4);padding:1px 4px;border-radius:3px;">triggerBody()?['to']</code><br>
+        7. Subject = <code style="background:var(--bg4);padding:1px 4px;border-radius:3px;">triggerBody()?['subject']</code><br>
+        8. Body = <code style="background:var(--bg4);padding:1px 4px;border-radius:3px;">triggerBody()?['body']</code><br>
+        9. Save, then copy the <strong>HTTP POST URL</strong> and paste it above
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn btn-red btn-sm" style="margin-right:auto;" onclick="clearNotifUrl()">Clear</button>
+    <button class="btn btn-ghost btn-sm" onclick="testNotification()">Send Test</button>
+    <button class="btn btn-ghost" onclick="closeModal('notif-overlay')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNotifUrl()">Save</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast">
   <div class="toast-ico ok" id="toast-ico"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5"/></svg></div>
   <span id="toast-msg">Done</span>
 </div>
@@ -891,6 +922,8 @@ applyTheme(currentTheme);
 // STATE
 // ══════════════════════════════════════════════════════
 const CFG_KEY='taskflow_config_v1';
+const NOTIF_URL_KEY='avar_notif_url';
+let notifUrl=''; // populated after init
 let CFG=null,msalInstance=null,accessToken=null,currentUser=null,msUser=null;
 let users=[],tasks=[],updates=[],subtasks=[],subtaskUpdates=[];
 let projects=[],projectMembers=[],milestones=[];
@@ -1077,6 +1110,8 @@ async function loadUserAndStart(){
       cu=mapUser(created);users.push(cu);
     }
     currentUser=cu;showApp();
+    // Check for overdue tasks and notify
+    setTimeout(()=>checkOverdueTasks(),3000);
   }catch(e){console.error(e);toast('Failed to connect to SharePoint: '+e.message,true);showScreen('login');}
 }
 
@@ -1194,7 +1229,16 @@ async function createTask(){
       created=true;
       successMsg='Task created (note: some columns like ProjectId/DeptId/Hidden are missing from TF_Tasks — please add them)';
     }
-    if(created){ await syncAll();closeModal('create-overlay');toast(successMsg); }
+    if(created){
+      await syncAll();
+      closeModal('create-overlay');
+      toast(successMsg);
+      // Notify assignee if different from creator
+      // Notify assignee directly (don't wait for sync to find the task)
+      if(assignee.email !== me()?.email){
+        notifyAssigned({title, desc:document.getElementById('t-desc').value.trim(), priority:document.getElementById('t-priority').value, due, createdById:me()?.id}, assignee.email);
+      }
+    }
   }catch(e){toast('Failed: '+e.message,true);console.error('createTask error:',e);}
   finally{btn.disabled=false;btn.textContent='Create Task';}
 }
@@ -1245,7 +1289,9 @@ async function saveTaskEdit(){
     if(eDeptId) payload.Hidden=isHiddenOn('e');
     if(due)payload.DueDate=due+'T00:00:00Z';
     await spPatch(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`,payload);
+    const wasReassigned = assignee.email !== t.assigneeEmail;
     await syncAll();closeModal('edit-overlay');currentTaskId=t.id;renderDetail();openModal('detail-overlay');toast('Task updated');
+    if(wasReassigned) notifyAssigned({title, desc:document.getElementById('e-desc').value.trim(), priority:document.getElementById('e-priority').value, due, createdById:t.createdById}, assignee.email);
   }catch(e){toast('Failed to update task',true);}
   finally{btn.disabled=false;btn.textContent='Save Changes';}
 }
@@ -1271,7 +1317,11 @@ function renderSubtaskDetail(){
   document.getElementById('st-d-upd-ct').textContent=st.updates.length||'';
   const ul=document.getElementById('st-d-upd-list');
   ul.innerHTML=st.updates.length?st.updates.slice().sort((a,b)=>b.createdAt-a.createdAt).map(u=>{const a=users.find(x=>x.id===u.authorId);return`<div class="upd-item ut-note"><div class="upd-meta"><span class="upd-author">${a?a.name:u.authorEmail}</span><span class="upd-time">${fmtDate(u.createdAt)}</span></div><div class="upd-text">${u.text}</div></div>`;}).join(''):'<div style="font-size:11px;color:var(--text3);">No comments yet.</div>';
-  document.getElementById('st-d-footer').innerHTML=`<button class="btn btn-${st.status==='done'?'ghost':'green'} btn-sm" style="margin-right:auto;" onclick="toggleSubtask('${st.id}');closeModal('st-detail-overlay');">${st.status==='done'?'Reopen':'Mark Done'}</button><button class="btn btn-ghost" onclick="closeModal('st-detail-overlay')">Close</button>`;
+  const canDelSt = isSA() || (me() && tasks.find(x=>x.id===st.taskId)?.createdById === me()?.id);
+  document.getElementById('st-d-footer').innerHTML=`
+    <button class="btn btn-${st.status==='done'?'ghost':'green'} btn-sm" style="margin-right:auto;" onclick="toggleSubtask('${st.id}');closeModal('st-detail-overlay');">${st.status==='done'?'Reopen':'Mark Done'}</button>
+    ${canDelSt?`<button class="btn btn-red btn-sm" onclick="deleteSubtask('${st.id}')">Delete</button>`:''}
+    <button class="btn btn-ghost" onclick="closeModal('st-detail-overlay')">Close</button>`;
 }
 async function postSubtaskUpdate(){
   const text=document.getElementById('st-u-text').value.trim();if(!text)return;
@@ -1280,10 +1330,21 @@ async function postSubtaskUpdate(){
   catch(e){toast('Failed',true);}
 }
 
+async function deleteSubtask(stId){
+  if(!confirm('Delete this subtask and its comments?'))return;
+  const st=subtasks.find(x=>x.id===stId);if(!st)return;
+  try{
+    const stUpds=subtaskUpdates.filter(u=>u.subtaskId===stId);
+    await Promise.all(stUpds.map(u=>spDelete(`/web/lists/getbytitle('TF_SubtaskUpdates')/items(${u.id})`)));
+    await spDelete(`/web/lists/getbytitle('TF_Subtasks')/items(${st.spId})`);
+    await syncAll();closeModal('st-detail-overlay');renderDetail();toast('Subtask deleted');
+  }catch(e){toast('Failed to delete subtask',true);console.error(e);}
+}
+
 // ══════════════════════════════════════════════════════
 // TASK DETAIL
 // ══════════════════════════════════════════════════════
-function openDetail(id){currentTaskId=id;renderDetail();openModal('detail-overlay');}
+function openDetail(id){currentTaskId=id;const t=tasks.find(x=>x.id===id);if(!t){toast('Task not found — refresh',true);return;}renderDetail();openModal('detail-overlay');}
 function renderDetail(){
   const t=tasks.find(x=>x.id===currentTaskId);if(!t)return;
   const assignee=users.find(x=>x.id===t.assigneeId);
@@ -1342,6 +1403,7 @@ async function postUpdate(){
     const newStatus=type==='done'?'done':type==='blocker'?'blocked':type==='progress'&&t.status==='open'?'in-progress':t.status;
     await Promise.all([spPost(`/web/lists/getbytitle('TF_Updates')/items`,{Title:text,TaskId:t.id,AuthorEmail:u.email,UpdateType:type}),spPatch(`/web/lists/getbytitle('TF_Tasks')/items(${t.spId})`,{Status:newStatus})]);
     document.getElementById('u-text').value='';await syncAll();renderDetail();renderAll();toast('Update posted');
+    notifyUpdate(t,text,type);
   }catch(e){toast('Failed',true);}
   finally{btn.disabled=false;btn.textContent='Post Update';}
 }
@@ -1424,7 +1486,7 @@ function renderProjectPageView(){
   const statusBadge={active:`<span class="badge bs-open">Active</span>`,'on-hold':`<span class="badge bs-in-progress">On Hold</span>`,completed:`<span class="badge bs-done">Completed</span>`,cancelled:`<span class="badge bs-blocked">Cancelled</span>`}[p.status]||'';
   const owner=users.find(x=>x.email===p.ownerEmail);
   const header=`<div style="margin-bottom:16px;">
-    <button class="btn btn-ghost btn-sm" onclick="setView(document.querySelector('.nav-item[data-view=projects]')||{dataset:{view:'projects'}});renderProjectsList(false);" style="margin-bottom:12px;">← Back to Projects</button>
+    <button class="btn btn-ghost btn-sm" onclick="currentView='projects';document.getElementById('view-title').textContent='Projects';document.getElementById('filterbar').style.display='none';document.getElementById('new-task-btn').style.display='none';document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.querySelector('.nav-item[data-view=projects]')?.classList.add('active');renderProjectsList(false);" style="margin-bottom:12px;">← Back to Projects</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
       <div style="width:44px;height:44px;border-radius:12px;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0;">${p.name[0].toUpperCase()}</div>
       <div style="flex:1;"><div style="font-size:18px;font-weight:600;">${p.name}</div>${p.desc?`<div style="font-size:12px;color:var(--text3);margin-top:2px;">${p.desc}</div>`:''}</div>
@@ -1544,157 +1606,23 @@ function renderProjectPageView(){
   document.getElementById('main-content').innerHTML=`${header}${tabsHTML}<div>${tabContent}</div>`;
 }
 
-function renderProjectDetail(){
-  const p=projects.find(x=>x.id===currentProjectId);if(!p)return;
-  document.getElementById('pd-title').textContent=p.name;
-  const statusBadge={active:`<span class="badge bs-open">Active</span>`,'on-hold':`<span class="badge bs-in-progress">On Hold</span>`,completed:`<span class="badge bs-done">Completed</span>`,cancelled:`<span class="badge bs-blocked">Cancelled</span>`}[p.status]||'';
-  const owner=users.find(x=>x.email===p.ownerEmail);
-  document.getElementById('pd-badges').innerHTML=`${statusBadge}${p.due?`<span class="badge" style="background:var(--bg4);color:var(--text2);">${fmtFullDate(p.due)}</span>`:''}${owner?`<span class="badge" style="background:var(--bg4);color:var(--text2);">Owner: ${owner.name}</span>`:''}`;
-  const canEdit=effectiveRole()==='superadmin'||p.ownerEmail===me()?.email;
-  document.getElementById('pd-edit-btn').style.display=canEdit?'flex':'none';
-  renderProjTabContent();
-}
 
-function renderProjTabContent(){
-  const p=projects.find(x=>x.id===currentProjectId);if(!p)return;
-  const projTasks=tasks.filter(t=>t.projectId===currentProjectId);
-  const projMems=projectMembers.filter(m=>m.projectId===currentProjectId);
-  const projMilestones=milestones.filter(m=>m.projectId===currentProjectId);
-  const content=document.getElementById('pd-content');
-
-  if(currentProjTab==='overview'){
-    const total=projTasks.length,done=projTasks.filter(t=>t.status==='done').length,inProg=projTasks.filter(t=>t.status==='in-progress').length,overdue=projTasks.filter(t=>t.status!=='done'&&t.due&&new Date(t.due+'T00:00:00')<new Date()).length;
-    const pct=total?Math.round(done/total*100):0;
-    const msTotal=projMilestones.length,msDone=projMilestones.filter(m=>m.status==='done').length;
-    content.innerHTML=`<div style="padding:16px 20px;">
-      <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
-        <div class="stat"><div class="stat-lbl">Total Tasks</div><div class="stat-val vc">${total}</div></div>
-        <div class="stat"><div class="stat-lbl">In Progress</div><div class="stat-val va">${inProg}</div></div>
-        <div class="stat"><div class="stat-lbl">Overdue</div><div class="stat-val vr">${overdue}</div></div>
-        <div class="stat"><div class="stat-lbl">Completed</div><div class="stat-val vg">${done}</div><div class="stat-hint">${pct}%</div></div>
-      </div>
-      <div style="margin-bottom:20px;">
-        <div class="section-hd">Overall Progress</div>
-        <div style="background:var(--bg3);border-radius:10px;height:10px;overflow:hidden;"><div style="height:10px;border-radius:10px;background:${p.color};width:${pct}%;transition:width .4s;"></div></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px;">${done} of ${total} tasks complete · ${pct}%</div>
-      </div>
-      ${p.desc?`<div style="margin-bottom:20px;"><div class="section-hd">About</div><div style="font-size:12px;color:var(--text2);line-height:1.7;">${p.desc}</div></div>`:''}
-      <div>
-        <div class="section-hd">Milestones ${msTotal?`<span style="font-family:var(--mono);color:var(--text3);">${msDone}/${msTotal}</span>`:''}
-        </div>
-        ${projMilestones.length?projMilestones.map(ms=>{
-          const msTasksDue=projTasks.filter(t=>t.due&&t.due<=ms.due);
-          const msPct=msTasksDue.length?Math.round(msTasksDue.filter(t=>t.status==='done').length/msTasksDue.length*100):0;
-          return`<div class="milestone-item"><div class="milestone-header"><div class="milestone-dot" style="background:${ms.status==='done'?'var(--green)':ms.due&&new Date(ms.due+'T00:00:00')<new Date()?'var(--red)':'#3a5092'};"></div><div class="milestone-title">${ms.name}</div>${ms.due?`<div class="milestone-date">${fmtFullDate(ms.due)}</div>`:''}${ms.status==='done'?`<span class="badge bs-done btn-sm" style="margin-left:6px;">Done</span>`:''}</div><div class="milestone-bar-bg"><div class="milestone-bar-fill" style="width:${msPct}%;background:${p.color};"></div></div><div style="font-size:10px;color:var(--text3);margin-top:3px;">${msPct}% of tasks due by this milestone are complete</div></div>`;
-        }).join(''):'<div style="font-size:12px;color:var(--text3);">No milestones yet. Add them in the Milestones tab.</div>'}
-      </div>
-    </div>`;
-  }else if(currentProjTab==='tasks'){
-    const canAdd=isProjectMember(currentProjectId);
-    content.innerHTML=`<div style="padding:16px 20px;">
-      ${canAdd?`<button class="btn btn-primary btn-sm" style="margin-bottom:14px;" onclick="openCreateModal('${currentProjectId}')">+ Add Task</button>`:''}
-      ${projTasks.length?projTasks.map(t=>{
-        const a=users.find(x=>x.id===t.assigneeId);
-        const sC={open:'bs-open','in-progress':'bs-in-progress',done:'bs-done',blocked:'bs-blocked'}[t.status]||'bs-open';
-        const sL={open:'Open','in-progress':'In Progress',done:'Done',blocked:'Blocked'}[t.status]||t.status;
-        return`<div class="task-card tc-ok" onclick="openDetail('${t.id}')">
-          <div class="tc-top"><div class="tc-dot dp-${t.priority}"></div><div class="tc-body"><div class="tc-title">${t.title}</div>${t.desc?`<div class="tc-desc">${t.desc}</div>`:''}</div><span class="badge ${sC}">${sL}</span></div>
-          <div class="tc-foot">${a?`<div class="chip"><div class="mini-av" style="${avColor(a.name)}">${initials(a.name)}</div>${a.name}</div>`:''}<div class="tc-meta"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="5"/><path d="M6 3.5v3l1.5 1.5"/></svg>${t.due?fmtFullDate(t.due):'No deadline'}</div></div>
-        </div>`;
-      }).join(''):'<div class="empty"><p style="font-size:12px;">No tasks in this project yet.</p></div>'}
-    </div>`;
-  }else if(currentProjTab==='milestones'){
-    const canEdit=effectiveRole()==='superadmin'||p.ownerEmail===me()?.email;
-    content.innerHTML=`<div style="padding:16px 20px;">
-      ${canEdit?`<button class="btn btn-primary btn-sm" style="margin-bottom:14px;" onclick="openMilestoneModal()">+ Add Milestone</button>`:''}
-      ${projMilestones.length?projMilestones.map(ms=>{
-        const isOverdue=ms.due&&new Date(ms.due+'T00:00:00')<new Date()&&ms.status!=='done';
-        return`<div class="milestone-item" style="cursor:pointer;" onclick="${canEdit?`openEditMilestoneModal('${ms.id}')`:``}">
-          <div class="milestone-header">
-            <div class="milestone-dot" style="background:${ms.status==='done'?'var(--green)':isOverdue?'var(--red)':'#3a5092'};"></div>
-            <div class="milestone-title">${ms.name}</div>
-            ${ms.due?`<div class="milestone-date">${fmtFullDate(ms.due)}</div>`:''}
-            <span class="badge ${ms.status==='done'?'bs-done':isOverdue?'bs-blocked':'bs-open'}">${ms.status==='done'?'Done':isOverdue?'Overdue':'Pending'}</span>
-          </div>
-          ${ms.desc?`<div style="font-size:11px;color:var(--text3);margin-top:4px;">${ms.desc}</div>`:''}
-          ${canEdit?`<div style="display:flex;gap:6px;margin-top:8px;">
-            ${ms.status!=='done'?`<button class="btn btn-green btn-sm" onclick="event.stopPropagation();toggleMilestone('${ms.id}')">Mark Done</button>`:
-            `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();toggleMilestone('${ms.id}')">Reopen</button>`}
-            <button class="btn btn-red btn-sm" onclick="event.stopPropagation();deleteMilestone('${ms.id}')">Delete</button>
-          </div>`:''}
-        </div>`;
-      }).join(''):'<div class="empty"><p style="font-size:12px;">No milestones yet.</p></div>'}
-    </div>`;
-  }else if(currentProjTab==='calendar'){
-    const today=new Date();today.setHours(0,0,0,0);
-    const firstDay=new Date(projCalYear,projCalMonth,1);
-    const lastDay=new Date(projCalYear,projCalMonth+1,0);
-    const startDow=firstDay.getDay();
-    const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    const buckets={};
-    projTasks.forEach(t=>{if(!t.due)return;const d=new Date(t.due+'T00:00:00');if(d.getFullYear()===projCalYear&&d.getMonth()===projCalMonth){const k=d.getDate();if(!buckets[k])buckets[k]=[];buckets[k].push({...t,_type:'task'});}});
-    projMilestones.forEach(ms=>{if(!ms.due)return;const d=new Date(ms.due+'T00:00:00');if(d.getFullYear()===projCalYear&&d.getMonth()===projCalMonth){const k=d.getDate();if(!buckets[k])buckets[k]=[];buckets[k].push({...ms,_type:'milestone'});}});
-    let cells=[];
-    for(let i=0;i<startDow;i++){cells.push({date:new Date(projCalYear,projCalMonth,-startDow+i+1),other:true});}
-    for(let i=1;i<=lastDay.getDate();i++){cells.push({date:new Date(projCalYear,projCalMonth,i),other:false});}
-    while(cells.length%7!==0){const l=cells[cells.length-1].date;cells.push({date:new Date(l.getFullYear(),l.getMonth(),l.getDate()+1),other:true});}
-    const dayHds=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-day-hd">${d}</div>`).join('');
-    const dayCells=cells.map(cell=>{
-      const isToday=cell.date.getTime()===today.getTime();
-      const key=!cell.other?cell.date.getDate():null;
-      const items=key&&buckets[key]?buckets[key]:[];
-      const pills=items.slice(0,3).map(item=>{
-        if(item._type==='milestone')return`<div class="cal-task-pill cp-milestone" title="${item.name}">★ ${item.name}</div>`;
-        return`<div class="cal-task-pill cp-${item.priority}" onclick="event.stopPropagation();openDetail('${item.id}')" title="${item.title}">${item.title}</div>`;
-      }).join('');
-      const more=items.length>3?`<div class="cal-more">+${items.length-3} more</div>`:'';
-      const numEl=isToday?`<span class="today-dot">${cell.date.getDate()}</span>`:`<span>${cell.date.getDate()}</span>`;
-      return`<div class="cal-day${cell.other?' other-month':''}${isToday?' today':''}"><div class="cal-day-num">${numEl}</div>${pills}${more}</div>`;
-    }).join('');
-    content.innerHTML=`<div style="padding:16px 20px;">
-      <div class="cal-header">
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="projCalNav(-1)"><svg viewBox="0 0 14 14"><path d="M9 2L4 7l5 5"/></svg></button>
-          <div class="cal-month">${monthName}</div>
-          <button class="cal-nav-btn" onclick="projCalNav(1)"><svg viewBox="0 0 14 14"><path d="M5 2l5 5-5 5"/></svg></button>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="projCalYear=new Date().getFullYear();projCalMonth=new Date().getMonth();renderProjTabContent();">Today</button>
-      </div>
-      <div class="cal-grid">${dayHds}${dayCells}</div>
-      <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text3);">
-        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--purple-bg);border-left:2px solid var(--purple);display:inline-block;"></span>Milestone</span>
-        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--red-bg);display:inline-block;"></span>High</span>
-        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--amber-bg);display:inline-block;"></span>Medium</span>
-        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--green-bg);display:inline-block;"></span>Low</span>
-      </div>
-    </div>`;
-  }else if(currentProjTab==='members'){
-    const canEdit=effectiveRole()==='superadmin'||p.ownerEmail===me()?.email;
-    content.innerHTML=`<div style="padding:16px 20px;">
-      ${canEdit?`<div style="display:flex;gap:8px;margin-bottom:14px;"><select class="fs" id="pm-add-sel" style="flex:1;">${users.filter(u=>!projMems.some(m=>m.memberEmail===u.email)).map(u=>`<option value="${u.email}">${u.name} (${u.email})</option>`).join('')}</select><button class="btn btn-primary btn-sm" onclick="addProjectMember()">+ Add</button></div>`:''}
-      ${projMems.map(m=>{
-        const u=users.find(x=>x.email===m.memberEmail);
-        return`<div class="member-row"><div class="member-av" style="${avColor(u?.name||m.memberEmail)}">${initials(u?.name||m.memberEmail)}</div><div style="flex:1;"><div style="font-size:13px;font-weight:500;">${u?u.name:m.memberEmail}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">${m.memberEmail} · ${m.role}</div></div>${canEdit&&m.memberEmail!==p.ownerEmail?`<button class="btn btn-red btn-sm" onclick="removeProjectMember('${m.id}')">Remove</button>`:''}</div>`;
-      }).join('')||'<div style="font-size:12px;color:var(--text3);">No members yet.</div>'}
-    </div>`;
-  }
-}
 
 function projCalNav(dir){
   projCalMonth+=dir;
   if(projCalMonth>11){projCalMonth=0;projCalYear++;}
   if(projCalMonth<0){projCalMonth=11;projCalYear--;}
-  renderProjTabContent();
+  renderProjectPageView();
 }
 
 async function addProjectMember(){
   const email=document.getElementById('pm-add-sel')?.value;if(!email)return;
-  try{await spPost(`/web/lists/getbytitle('TF_ProjectMembers')/items`,{ProjectId:currentProjectId,MemberEmail:email,Role:'member'});await syncAll();renderProjTabContent();toast('Member added');}
+  try{await spPost(`/web/lists/getbytitle('TF_ProjectMembers')/items`,{ProjectId:currentProjectId,MemberEmail:email,Role:'member'});await syncAll();renderProjectPageView();toast('Member added');}
   catch(e){toast('Failed',true);}
 }
 async function removeProjectMember(id){
   const m=projectMembers.find(x=>x.id===id);if(!m)return;
-  try{await spDelete(`/web/lists/getbytitle('TF_ProjectMembers')/items(${m.spId})`);await syncAll();renderProjTabContent();toast('Member removed');}
+  try{await spDelete(`/web/lists/getbytitle('TF_ProjectMembers')/items(${m.spId})`);await syncAll();renderProjectPageView();toast('Member removed');}
   catch(e){toast('Failed',true);}
 }
 
@@ -1753,19 +1681,19 @@ async function saveMilestone(){
     if(due)payload.DueDate=due+'T00:00:00Z';
     if(editingMilestoneId){const ms=milestones.find(x=>x.id===editingMilestoneId);await spPatch(`/web/lists/getbytitle('TF_Milestones')/items(${ms.spId})`,payload);}
     else{await spPost(`/web/lists/getbytitle('TF_Milestones')/items`,payload);}
-    await syncAll();closeModal('milestone-overlay');renderProjTabContent();toast(editingMilestoneId?'Milestone updated':'Milestone added');
+    await syncAll();closeModal('milestone-overlay');renderProjectPageView();toast(editingMilestoneId?'Milestone updated':'Milestone added');
   }catch(e){toast('Failed — check TF_Milestones list exists',true);}
   finally{btn.disabled=false;btn.textContent='Save';}
 }
 async function toggleMilestone(id){
   const ms=milestones.find(x=>x.id===id);if(!ms)return;
-  try{await spPatch(`/web/lists/getbytitle('TF_Milestones')/items(${ms.spId})`,{Status:ms.status==='done'?'pending':'done'});await syncAll();renderProjTabContent();toast('Milestone updated');}
+  try{await spPatch(`/web/lists/getbytitle('TF_Milestones')/items(${ms.spId})`,{Status:ms.status==='done'?'pending':'done'});await syncAll();renderProjectPageView();toast('Milestone updated');}
   catch(e){toast('Failed',true);}
 }
 async function deleteMilestone(id){
   if(!confirm('Delete this milestone?'))return;
   const ms=milestones.find(x=>x.id===id);if(!ms)return;
-  try{await spDelete(`/web/lists/getbytitle('TF_Milestones')/items(${ms.spId})`);await syncAll();renderProjTabContent();toast('Deleted');}
+  try{await spDelete(`/web/lists/getbytitle('TF_Milestones')/items(${ms.spId})`);await syncAll();renderProjectPageView();toast('Deleted');}
   catch(e){toast('Failed',true);}
 }
 
@@ -1883,7 +1811,7 @@ function renderDeptDetail(deptId){
 
   document.getElementById('main-content').innerHTML=`
     <div style="margin-bottom:12px;">
-      <button class="btn btn-ghost btn-sm" onclick="setView(document.querySelector('.nav-item[data-view=departments]')||{dataset:{view:'departments'}})">← Departments</button>
+      <button class="btn btn-ghost btn-sm" onclick="currentView='departments';document.getElementById('view-title').textContent='Departments';document.getElementById('filterbar').style.display='none';document.getElementById('new-task-btn').style.display='none';document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.querySelector('.nav-item[data-view=departments]')?.classList.add('active');renderDeptsList();">← Departments</button>
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <div style="width:44px;height:44px;border-radius:12px;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;">${d.name[0]}</div>
@@ -2200,11 +2128,14 @@ function updateSidebar(){
           <div class="mini-av" style="${avColor(m.name)};width:16px;height:16px;font-size:8px;">${initials(m.name)}</div>
           <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>
           ${open?`<span class="nav-badge">${open}</span>`:''}
-          ${isMgr()&&!effectiveIsSA()&&m.managerEmail===u.email?`<span onclick="event.stopPropagation();removeFromTeam('${m.id}')" style="color:var(--text3);font-size:13px;line-height:1;padding:0 2px;cursor:pointer;opacity:0;" class="rm-btn" title="Remove from team">×</span>`:''}
+          ${!effectiveIsSA()&&m.managerEmail===u.email?`<span onclick="event.stopPropagation();removeFromTeam('${m.id}')" style="color:var(--text3);font-size:13px;line-height:1;padding:0 2px;cursor:pointer;opacity:0;" class="rm-btn" title="Remove from team">×</span>`:''}
         </div>`;
       }).join('')+
-      (sub.length?'':'<div style="font-size:11px;color:var(--text3);padding:4px 8px;">No reports yet</div>');
-    // Show hover remove buttons via CSS
+      // Always show Add to Team option for real managers
+      (!effectiveIsSA()?`<div class="nav-item" onclick="openAddToTeamModal()" style="color:var(--accent);margin-top:2px;">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" style="width:13px;height:13px;"><circle cx="6" cy="4.5" r="2.5"/><path d="M1 12c0-2.5 2.7-4 6-4"/><path d="M11 9v4M9 11h4"/></svg>
+        Add to My Team
+      </div>`:'');
     document.querySelectorAll('.rm-btn').forEach(btn=>{
       btn.parentElement.addEventListener('mouseenter',()=>btn.style.opacity='1');
       btn.parentElement.addEventListener('mouseleave',()=>btn.style.opacity='0');
@@ -2255,6 +2186,8 @@ let addTeamTab = 'existing';
 let addTeamSelectedUserId = null;
 
 function openAddToTeamModal() {
+  const u = me();
+  if (!u || (!isMgr() && !isSA())) { toast('Only managers can add team members', true); return; }
   addTeamTab = 'existing';
   addTeamSelectedUserId = null;
   document.getElementById('att-search').value = '';
@@ -2392,7 +2325,11 @@ function orgNode(u){
 function setView(el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
+  const prevView=currentView;
   currentView=el?el.dataset.view:'all';
+  // Reset sub-state when navigating to a different dept or project
+  if(currentView.startsWith('dept:') && currentView!==prevView){ currentDeptTab='tasks'; deptTaskFilter='active'; }
+  if(currentView.startsWith('project:') && currentView!==prevView){ currentProjTab='overview'; projCalYear=new Date().getFullYear(); projCalMonth=new Date().getMonth(); }
   const vl={all:'All Tasks',mine:'My Tasks',delegated:'Delegated',overdue:'Overdue',done:'Completed',calendar:'Calendar',projects:'Projects',archive:'Archive',departments:'Departments'};
   let title=vl[currentView]||currentView;
   if(currentView.startsWith('member:')){const u2=users.find(x=>x.id===currentView.slice(7));title=u2?u2.name+"'s Tasks":'Member';}
@@ -2462,9 +2399,95 @@ function roleBadge(r){const cl={superadmin:'br-sa',manager:'br-manager',member:'
 let demoMode=false;
 
 // ══════════════════════════════════════════════════════
+// NOTIFICATIONS — Power Automate
+// ══════════════════════════════════════════════════════
+function openNotifSettings(){
+  const inp=document.getElementById('notif-url-inp');
+  if(inp) inp.value=notifUrl||'';
+  updateNotifStatus();
+  openModal('notif-overlay');
+}
+function updateNotifStatus(){
+  const dot=document.getElementById('notif-status-dot');
+  const txt=document.getElementById('notif-status-text');
+  if(!dot||!txt)return;
+  if(notifUrl){dot.style.background='var(--green)';txt.textContent='Configured — notifications active';}
+  else{dot.style.background='var(--red)';txt.textContent='Not configured';}
+}
+function saveNotifUrl(){
+  const val=document.getElementById('notif-url-inp').value.trim();
+  notifUrl=val;
+  if(val) localStorage.setItem(NOTIF_URL_KEY,val);
+  else localStorage.removeItem(NOTIF_URL_KEY);
+  updateNotifStatus();
+  closeModal('notif-overlay');
+  toast(val?'Notification URL saved':'Notifications cleared');
+}
+function clearNotifUrl(){
+  document.getElementById('notif-url-inp').value='';
+  notifUrl='';
+  localStorage.removeItem(NOTIF_URL_KEY);
+  updateNotifStatus();
+  toast('Notifications cleared');
+}
+async function testNotification(){
+  const u=me();if(!notifUrl){toast('No URL configured',true);return;}
+  await sendNotification({to:u?.email||'',subject:'AVAR Tasks — Test Notification',body:`Hi ${u?.name||'there'},\n\nThis is a test notification from AVAR Tasks. Your notifications are working correctly!\n\nAVAR Tasks`,event:'test'});
+  toast('Test email sent — check your inbox');
+}
+async function sendNotification(payload){
+  if(!notifUrl)return;
+  try{
+    await fetch(notifUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),mode:'no-cors'});
+  }catch(e){console.warn('Notification failed:',e);}
+}
+function notifyAssigned(task, assigneeEmail){
+  const assignee=users.find(u=>u.email===assigneeEmail);
+  if(!assignee) return;
+  const creator=users.find(u=>u.id===task.createdById);
+  sendNotification({
+    to: assigneeEmail,
+    subject: `AVAR Tasks — New task assigned: ${task.title}`,
+    body: `Hi ${assignee.name},\n\nA new task has been assigned to you.\n\nTask: ${task.title}\nPriority: ${task.priority||'medium'}\nDue: ${task.due||'No deadline'}\nAssigned by: ${creator?.name||me()?.name||'—'}${task.desc?'\n\nDetails:\n'+task.desc:''}\n\nLog in to AVAR Tasks to view and update it.\n\nAVAR Tasks`,
+    event: 'assigned'
+  });
+}
+function notifyUpdate(task,updateText,updateType){
+  if(!task)return;
+  const assignee=users.find(u=>u.id===task.assigneeId);
+  const creator=users.find(u=>u.id===task.createdById);
+  const notifyEmails=new Set();
+  if(assignee&&assignee.email!==me()?.email) notifyEmails.add(assignee.email);
+  if(creator&&creator.email!==me()?.email) notifyEmails.add(creator.email);
+  notifyEmails.forEach(email=>{
+    const recipient=users.find(u=>u.email===email);
+    sendNotification({
+      to:email,
+      subject:`AVAR Tasks — Update on: ${task.title}`,
+      body:`Hi ${recipient?.name||'there'},\n\nThere is a new ${updateType} update on a task you're involved in.\n\nTask: ${task.title}\nUpdate type: ${updateType}\nMessage: ${updateText}\nPosted by: ${me()?.name||'—'}\n\nLog in to view the full task.\n\nAVAR Tasks`,
+      event:'update'
+    });
+  });
+}
+function checkOverdueTasks(){
+  if(!notifUrl||!me())return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const myOverdue=visibleTasks().filter(t=>t.assigneeId===me()?.id&&t.status!=='done'&&t.due&&new Date(t.due+'T00:00:00')<today);
+  if(!myOverdue.length)return;
+  const list=myOverdue.map(t=>`• ${t.title} (due ${fmtFullDate(t.due)})`).join('\n');
+  sendNotification({
+    to:me().email,
+    subject:`AVAR Tasks — You have ${myOverdue.length} overdue task${myOverdue.length!==1?'s':''}`,
+    body:`Hi ${me().name},\n\nYou have ${myOverdue.length} overdue task${myOverdue.length!==1?'s':''} in AVAR Tasks:\n\n${list}\n\nPlease log in to update or reschedule these tasks.\n\nAVAR Tasks`,
+    event:'overdue'
+  });
+}
+
+// ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
 CFG={tenant:'b3791c90-42f6-4b17-9c18-9300e725ae1f',client:'f1ce86ef-6125-409c-950d-c90072c459b7',site:'https://avarglobal.sharepoint.com',redirectUri:'https://lyric-logic.github.io/avar-tasks/avar-tasks.html'};
+notifUrl=localStorage.getItem(NOTIF_URL_KEY)||'';
 localStorage.removeItem(CFG_KEY);localStorage.setItem(CFG_KEY,JSON.stringify(CFG));
 showScreen('login');setLoginStatus('Loading auth library…');
 var msalCDNs=['https://lyric-logic.github.io/avar-tasks/msal-browser.min.js','https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.7.0/lib/msal-browser.min.js','https://unpkg.com/@azure/msal-browser@3.7.0/lib/msal-browser.min.js'];
