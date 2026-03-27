@@ -330,6 +330,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .rtp:hover{color:var(--text2);}
 .rtp.active{background:var(--bg2);color:var(--accent);box-shadow:var(--shadow);}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+
+/* ── SIDEBAR DRAG & DROP ── */
+.nav-sect{margin-bottom:12px;position:relative;}
+.nav-sect[draggable=true]{cursor:default;}
+.nav-sect.drag-over{background:var(--blue-bg);border-radius:var(--r);outline:1px dashed var(--border2);}
+.nav-sect.dragging{opacity:.4;}
+.drag-handle{position:absolute;right:4px;top:2px;width:16px;height:16px;display:none;align-items:center;justify-content:center;cursor:grab;color:var(--text3);border-radius:3px;}
+.drag-handle:hover{color:var(--text2);background:var(--bg4);}
+.drag-handle svg{width:10px;height:10px;}
+.nav-sect:hover .drag-handle{display:flex;}
+.team-drag-handle{cursor:grab;}
+.team-drag-handle:active{cursor:grabbing;}
+.team-member-item{transition:outline .1s;}
+.sb-nav-label-row{display:flex;align-items:center;justify-content:space-between;padding-right:6px;}
 </style>
 </head>
 <body>
@@ -385,8 +399,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
     </div>
-    <div class="sb-nav">
-      <div class="nav-sect">
+    <div class="sb-nav" id="sb-nav">
+      <div class="nav-sect" data-section="tasks">
+        <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
         <div class="nav-sect-label">Tasks</div>
         <div class="nav-item active" data-view="all" onclick="setView(this)">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="12" height="12" rx="2"/><path d="M4 7h6M4 4.5h6M4 9.5h4"/></svg>
@@ -414,7 +429,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
-      <div class="nav-sect">
+      <div class="nav-sect" data-section="projects">
+        <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
         <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
           Projects
           <span onclick="openCreateProjectModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;" title="New project">+</span>
@@ -430,7 +446,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div id="project-nav-items"></div>
       </div>
 
-      <div class="nav-sect">
+      <div class="nav-sect" data-section="departments">
+        <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
         <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
           Departments
           <span id="dept-add-btn" onclick="openCreateDeptModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;display:none;" title="New department">+</span>
@@ -442,7 +459,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div id="dept-nav-items"></div>
       </div>
 
-      <div class="nav-sect" id="team-nav-sect" style="display:none;">
+      <div class="nav-sect" id="team-nav-sect" data-section="team" style="display:none;">
+        <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
         <div class="nav-sect-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:6px;">
           My Team
           <span onclick="openAddToTeamModal()" style="cursor:pointer;color:var(--accent);font-size:14px;line-height:1;" title="Add team member">+</span>
@@ -450,7 +468,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div id="team-nav-items"></div>
       </div>
 
-      <div class="nav-sect" id="admin-nav-sect" style="display:none;">
+      <div class="nav-sect" id="admin-nav-sect" data-section="admin" style="display:none;">
+        <div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1"/><circle cx="7" cy="2" r="1"/><circle cx="3" cy="6" r="1"/><circle cx="7" cy="6" r="1"/><circle cx="3" cy="10" r="1"/><circle cx="7" cy="10" r="1"/></svg></div>
         <div class="nav-sect-label">Admin</div>
         <div class="nav-item" onclick="openOrgModal()">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="1" width="4" height="3" rx="1"/><rect x="1" y="10" width="4" height="3" rx="1"/><rect x="9" y="10" width="4" height="3" rx="1"/><path d="M7 4v2M3 10V9a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/></svg>
@@ -482,6 +501,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </button>
         <button class="btn btn-ghost btn-sm" onclick="openNotifSettings()" style="justify-content:center;" title="Notification settings">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 1.5a4 4 0 0 1 4 4v2.5l1 2H2l1-2V5.5a4 4 0 0 1 4-4z"/><path d="M5.5 11.5a1.5 1.5 0 0 0 3 0"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="resetSidebarOrder()" title="Reset sidebar order" style="justify-content:center;">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="10" height="2" rx="1"/><rect x="2" y="6" width="10" height="2" rx="1"/><rect x="2" y="10" width="10" height="2" rx="1"/></svg>
         </button>
         <button class="btn btn-ghost btn-sm" onclick="signOut()">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 10v2H2V2h7v2M6 7h7M10 5l3 2-3 2"/></svg>
@@ -1936,12 +1958,33 @@ function renderProjectsList(archive=false){
 }
 
 function renderDeptsList(){
+  const u=me();
+
+  // Determine which departments this user can see:
+  // SA: all departments
+  // Manager/Member: depts they belong to OR manage, PLUS depts where they have tasks assigned
+  function visibleDepts(){
+    if(effectiveIsSA()) return departments;
+    const myEmail=u?.email||'';
+    // Depts the user is a member of or manages
+    const memberOf=new Set(
+      departments.filter(d=>
+        d.managerEmail===myEmail ||
+        deptMembers.some(m=>m.deptId===d.id&&m.memberEmail===myEmail)
+      ).map(d=>d.id)
+    );
+    // Depts where the user has tasks assigned (even if not a member)
+    tasks.filter(t=>t.assigneeId===u?.id&&t.deptId).forEach(t=>memberOf.add(t.deptId));
+    return departments.filter(d=>memberOf.has(d.id));
+  }
+
+  const visible=visibleDepts();
   document.getElementById('main-content').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;">${departments.length} department${departments.length!==1?'s':''}</div>
-      ${isSA()?`<button class="btn btn-primary btn-sm" onclick="openCreateDeptModal()">+ New Department</button>`:''}
+      <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;">${visible.length} department${visible.length!==1?'s':''}</div>
+      ${effectiveIsSA()?`<button class="btn btn-primary btn-sm" onclick="openCreateDeptModal()">+ New Department</button>`:''}
     </div>
-    ${departments.length?departments.map(d=>{
+    ${visible.length?visible.map(d=>{
       const mems=deptMembers.filter(m=>m.deptId===d.id).length;
       const dTasks=tasks.filter(t=>t.deptId===d.id&&t.status!=='done').length;
       const mgr=users.find(u=>u.email===d.managerEmail);
@@ -1950,7 +1993,7 @@ function renderDeptsList(){
         <div class="dept-foot"><span>${mems} member${mems!==1?'s':''}</span><span>·</span><span>${dTasks} active task${dTasks!==1?'s':''}</span>${mgr?`<span>·</span><span>Mgr: ${mgr.name}</span>`:''}
         </div>
       </div>`;
-    }).join(''):`<div class="empty"><p style="font-size:12px;">${isSA()?'No departments yet. Create one above.':'No departments available.'}</p></div>`}`;
+    }).join(''):`<div class="empty"><p style="font-size:12px;">${effectiveIsSA()?'No departments yet. Create one above.':'You are not a member of any department yet.'}</p></div>`}`;
 }
 
 // Calendar filter state
@@ -2092,7 +2135,11 @@ function renderStats(){
   document.getElementById('nc-done').textContent=base.filter(t=>t.status==='done').length;
   document.getElementById('nc-users').textContent=users.length;
   document.getElementById('nc-projects').textContent=projects.filter(p=>p.status==='active'||p.status==='on-hold').length;
-  document.getElementById('nc-depts').textContent=departments.length;
+  // Dept badge — count only depts visible to this user
+  const visibleDeptIds=new Set(departments.filter(d=>d.managerEmail===u?.email||deptMembers.some(m=>m.deptId===d.id&&m.memberEmail===u?.email)).map(d=>d.id));
+  tasks.filter(t=>t.assigneeId===u?.id&&t.deptId).forEach(t=>visibleDeptIds.add(t.deptId));
+  const visibleDeptCount=effectiveIsSA()?departments.length:departments.filter(d=>visibleDeptIds.has(d.id)).length;
+  document.getElementById('nc-depts').textContent=visibleDeptCount;
   const calCount=visibleTasks().filter(t=>{if(!t.due)return false;const d=new Date(t.due+'T00:00:00');return d.getFullYear()===calYear&&d.getMonth()===calMonth&&t.status!=='done';}).length;
   document.getElementById('nc-calendar').textContent=calCount||0;
 }
@@ -2121,31 +2168,75 @@ function updateSidebar(){
   if(effectiveIsMgr()){
     teamSect.style.display='block';
     const sub=effectiveIsSA()?users.filter(x=>x.id!==u.id):users.filter(x=>getSubtree(u.id).includes(x.id));
+
+    // Apply saved team member order
+    const savedTeamOrder=JSON.parse(localStorage.getItem('avar_team_order_'+(u.id||''))||'[]');
+    const sortedSub=savedTeamOrder.length
+      ? [...sub].sort((a,b)=>{
+          const ai=savedTeamOrder.indexOf(a.id);
+          const bi=savedTeamOrder.indexOf(b.id);
+          if(ai===-1&&bi===-1)return 0;
+          if(ai===-1)return 1;
+          if(bi===-1)return -1;
+          return ai-bi;
+        })
+      : sub;
+
     document.getElementById('team-nav-items').innerHTML=
-      sub.map(m=>{
+      sortedSub.map(m=>{
         const open=tasks.filter(t=>t.assigneeId===m.id&&t.status!=='done').length;
-        return`<div class="nav-item" data-view="member:${m.id}" onclick="setView(this)" style="padding-right:4px;">
+        return`<div class="nav-item team-member-item" data-view="member:${m.id}" data-mid="${m.id}" onclick="setView(this)" style="padding-right:4px;">
+          <div class="team-drag-handle" title="Drag to reorder" onclick="event.stopPropagation()" style="display:none;align-items:center;justify-content:center;width:14px;height:14px;cursor:grab;color:var(--text3);flex-shrink:0;margin-right:2px;">
+            <svg viewBox="0 0 8 12" fill="currentColor" width="8" height="12"><circle cx="2" cy="1.5" r="1"/><circle cx="6" cy="1.5" r="1"/><circle cx="2" cy="5" r="1"/><circle cx="6" cy="5" r="1"/><circle cx="2" cy="8.5" r="1"/><circle cx="6" cy="8.5" r="1"/></svg>
+          </div>
           <div class="mini-av" style="${avColor(m.name)};width:16px;height:16px;font-size:8px;">${initials(m.name)}</div>
           <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>
           ${open?`<span class="nav-badge">${open}</span>`:''}
           ${!effectiveIsSA()&&m.managerEmail===u.email?`<span onclick="event.stopPropagation();removeFromTeam('${m.id}')" style="color:var(--text3);font-size:13px;line-height:1;padding:0 2px;cursor:pointer;opacity:0;" class="rm-btn" title="Remove from team">×</span>`:''}
         </div>`;
       }).join('')+
-      // Always show Add to Team option for real managers
       (!effectiveIsSA()?`<div class="nav-item" onclick="openAddToTeamModal()" style="color:var(--accent);margin-top:2px;">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" style="width:13px;height:13px;"><circle cx="6" cy="4.5" r="2.5"/><path d="M1 12c0-2.5 2.7-4 6-4"/><path d="M11 9v4M9 11h4"/></svg>
         Add to My Team
       </div>`:'');
+
+    // Wire up hover for remove buttons
     document.querySelectorAll('.rm-btn').forEach(btn=>{
-      btn.parentElement.addEventListener('mouseenter',()=>btn.style.opacity='1');
-      btn.parentElement.addEventListener('mouseleave',()=>btn.style.opacity='0');
+      btn.parentElement.addEventListener('mouseenter',()=>{ btn.style.opacity='1'; });
+      btn.parentElement.addEventListener('mouseleave',()=>{ btn.style.opacity='0'; });
     });
+
+    // Wire up hover for drag handles
+    document.querySelectorAll('.team-member-item').forEach(item=>{
+      item.addEventListener('mouseenter',()=>{
+        const h=item.querySelector('.team-drag-handle');
+        if(h) h.style.display='flex';
+      });
+      item.addEventListener('mouseleave',()=>{
+        const h=item.querySelector('.team-drag-handle');
+        if(h) h.style.display='none';
+      });
+    });
+
+    // Wire up drag on team member items (only for real managers, not SA view)
+    if(!effectiveIsSA()){
+      initTeamMemberDrag(u.id);
+    }
   }else teamSect.style.display='none';
   // Project nav
   const activeProjects=projects.filter(p=>p.status==='active'&&isProjectMember(p.id));
   document.getElementById('project-nav-items').innerHTML=activeProjects.slice(0,6).map(p=>`<div class="nav-item" data-view="project:${p.id}" onclick="setView(this);openProjectDetail('${p.id}')"><div class="nav-color-dot" style="background:${p.color};"></div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</span></div>`).join('');
   // Dept nav
-  const myDepts=departments.filter(d=>deptMembers.some(m=>m.deptId===d.id&&m.memberEmail===u.email)||d.managerEmail===u.email||isSA());
+  // Dept nav — same visibility rules as renderDeptsList
+  const myDeptIds=new Set(
+    departments.filter(d=>
+      d.managerEmail===u.email||
+      deptMembers.some(m=>m.deptId===d.id&&m.memberEmail===u.email)
+    ).map(d=>d.id)
+  );
+  // Also include depts where user has tasks assigned
+  tasks.filter(t=>t.assigneeId===u.id&&t.deptId).forEach(t=>myDeptIds.add(t.deptId));
+  const myDepts=effectiveIsSA()?departments:departments.filter(d=>myDeptIds.has(d.id));
   document.getElementById('dept-nav-items').innerHTML=myDepts.slice(0,5).map(d=>`<div class="nav-item" data-view="dept:${d.id}" onclick="setView(this)"><div class="nav-color-dot" style="background:${d.color};"></div><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}</span></div>`).join('');
   // Perm note
   const note=document.getElementById('perm-note');
@@ -2376,7 +2467,7 @@ function showScreen(s){
   document.getElementById('loading-screen').style.display=s==='loading'?'flex':'none';
   document.getElementById('app-screen').style.display=s==='app'?'block':'none';
 }
-function showApp(){showScreen('app');renderAll();}
+function showApp(){showScreen('app');initSidebarDrag();renderAll();}
 function setLoadingText(t){const el=document.getElementById('loading-text');if(el)el.textContent=t;}
 function setSyncState(s){const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label');dot.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');lbl.textContent=s==='syncing'?'syncing…':s==='error'?'sync error':'synced';}
 function openModal(id){document.getElementById(id).classList.add('open');}
@@ -2388,6 +2479,175 @@ function populateMgrSel(selId,currentVal,excludeEmail){const sel=document.getEle
 // ══════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// SIDEBAR DRAG & DROP REORDER
+// ══════════════════════════════════════════════════════
+const SB_ORDER_KEY = 'avar_sb_order';
+let sbDragSrc = null;
+
+function initSidebarDrag() {
+  const nav = document.getElementById('sb-nav');
+  if (!nav) return;
+
+  // Apply saved order
+  const saved = JSON.parse(localStorage.getItem(SB_ORDER_KEY) || '[]');
+  if (saved.length) {
+    saved.forEach(sectionId => {
+      const el = nav.querySelector(`[data-section="${sectionId}"]`);
+      if (el) nav.appendChild(el); // move to end in saved order
+    });
+  }
+
+  // Wire up drag events on each section via its handle
+  nav.querySelectorAll('.nav-sect[data-section]').forEach(sect => {
+    const handle = sect.querySelector('.drag-handle');
+    if (!handle) return;
+
+    handle.addEventListener('mousedown', () => {
+      sect.setAttribute('draggable', 'true');
+    });
+    handle.addEventListener('mouseup', () => {
+      sect.setAttribute('draggable', 'false');
+    });
+
+    sect.addEventListener('dragstart', e => {
+      sbDragSrc = sect;
+      sect.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', sect.dataset.section);
+    });
+
+    sect.addEventListener('dragend', () => {
+      sect.classList.remove('dragging');
+      sect.setAttribute('draggable', 'false');
+      nav.querySelectorAll('.nav-sect').forEach(s => s.classList.remove('drag-over'));
+      saveSidebarOrder();
+    });
+
+    sect.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (sbDragSrc && sbDragSrc !== sect) {
+        nav.querySelectorAll('.nav-sect').forEach(s => s.classList.remove('drag-over'));
+        sect.classList.add('drag-over');
+      }
+    });
+
+    sect.addEventListener('dragleave', () => {
+      sect.classList.remove('drag-over');
+    });
+
+    sect.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (sbDragSrc && sbDragSrc !== sect) {
+        // Insert before or after depending on position
+        const srcIdx = [...nav.children].indexOf(sbDragSrc);
+        const tgtIdx = [...nav.children].indexOf(sect);
+        if (srcIdx < tgtIdx) {
+          nav.insertBefore(sbDragSrc, sect.nextSibling);
+        } else {
+          nav.insertBefore(sbDragSrc, sect);
+        }
+      }
+      sect.classList.remove('drag-over');
+    });
+  });
+}
+
+function saveSidebarOrder() {
+  const nav = document.getElementById('sb-nav');
+  if (!nav) return;
+  const order = [...nav.querySelectorAll('.nav-sect[data-section]')]
+    .map(s => s.dataset.section);
+  localStorage.setItem(SB_ORDER_KEY, JSON.stringify(order));
+}
+
+function resetSidebarOrder() {
+  localStorage.removeItem(SB_ORDER_KEY);
+  const nav = document.getElementById('sb-nav');
+  const defaultOrder = ['tasks','projects','departments','team','admin'];
+  defaultOrder.forEach(id => {
+    const el = nav?.querySelector(`[data-section="${id}"]`);
+    if (el) nav.appendChild(el);
+  });
+  toast('Sidebar order reset');
+}
+
+// ── TEAM MEMBER DRAG ──
+let teamDragSrc = null;
+
+function initTeamMemberDrag(managerId) {
+  const container = document.getElementById('team-nav-items');
+  if (!container) return;
+
+  container.querySelectorAll('.team-member-item').forEach(item => {
+    const handle = item.querySelector('.team-drag-handle');
+    if (!handle) return;
+
+    handle.addEventListener('mousedown', () => {
+      item.setAttribute('draggable', 'true');
+    });
+    handle.addEventListener('mouseup', () => {
+      item.setAttribute('draggable', 'false');
+    });
+
+    item.addEventListener('dragstart', e => {
+      teamDragSrc = item;
+      item.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.dataset.mid);
+    });
+
+    item.addEventListener('dragend', () => {
+      item.style.opacity = '1';
+      item.setAttribute('draggable', 'false');
+      container.querySelectorAll('.team-member-item').forEach(i => {
+        i.style.outline = '';
+        i.style.background = '';
+      });
+      saveTeamOrder(managerId);
+    });
+
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (teamDragSrc && teamDragSrc !== item) {
+        container.querySelectorAll('.team-member-item').forEach(i => i.style.outline = '');
+        item.style.outline = '1px dashed var(--border2)';
+      }
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.style.outline = '';
+    });
+
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (teamDragSrc && teamDragSrc !== item) {
+        const items = [...container.querySelectorAll('.team-member-item')];
+        const srcIdx = items.indexOf(teamDragSrc);
+        const tgtIdx = items.indexOf(item);
+        if (srcIdx < tgtIdx) {
+          container.insertBefore(teamDragSrc, item.nextSibling);
+        } else {
+          container.insertBefore(teamDragSrc, item);
+        }
+      }
+      item.style.outline = '';
+    });
+  });
+}
+
+function saveTeamOrder(managerId) {
+  const container = document.getElementById('team-nav-items');
+  if (!container) return;
+  const order = [...container.querySelectorAll('.team-member-item')]
+    .map(i => i.dataset.mid);
+  localStorage.setItem('avar_team_order_' + managerId, JSON.stringify(order));
+}
+
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 function initials(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 
